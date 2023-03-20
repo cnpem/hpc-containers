@@ -1,0 +1,35 @@
+BootStrap: docker
+From: nvidia/cuda:11.7.0-devel-rockylinux8
+Stage: compile
+
+%post
+GMX_VERSION="2022.2"
+dnf install -y cmake python38 python38-devel fftw fftw-devel
+# dnf install -y  openmpi openmpi-devel 
+# export PATH=$PATH:/lib64/openmpi/bin/
+curl -o /opt/gromacs-${GMX_VERSION}.tar.gz https://ftp.gromacs.org/gromacs/gromacs-${GMX_VERSION}.tar.gz
+cd /opt
+tar -xvzf /opt/gromacs-${GMX_VERSION}.tar.gz
+cd /opt/gromacs-${GMX_VERSION}
+mkdir build_gpu
+cd build_gpu
+
+cmake .. -DGMX_DEFAULT_SUFFIX=OFF -DGMX_DOUBLE=OFF -DGMX_GPU=CUDA -DGMX_BUILD_MDRUN_ONLY=ON -DGMX_THREAD_MPI=ON -DGMXAPI=OFF -DCMAKE_INSTALL_PREFIX=/opt/gromacs/ 
+# cmake .. -DGMX_BUILD_OWN_FFTW=ON -DGMX_DEFAULT_SUFFIX=OFF -DGMX_DOUBLE=OFF -DGMX_GPU=CUDA -DGMX_BUILD_MDRUN_ONLY=ON -DGMX_MPI=ON -DGMX_THREAD_MPI=ON -DGMXAPI=OFF -DCMAKE_INSTALL_PREFIX=/opt/gromacs/ 
+make -j 6
+make install -j 6
+rm /opt/gromacs-${GMX_VERSION}.tar.gz
+rm -r /opt/gromacs-${GMX_VERSION}
+
+
+%environment
+export PATH=$PATH:/opt/gromacs/bin/
+# export PATH=$PATH:/lib64/openmpi/bin/
+
+%runscript
+gmx $@
+
+%labels
+Author jose.pereira@lnbio.cnpem.br
+Version v0.1
+Info NVIDIA/Rocky8 with Gromacs ${GMX_VERSION} preinstalled.
