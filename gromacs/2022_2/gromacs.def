@@ -21,6 +21,10 @@ make install -j 6
 rm /opt/gromacs-${GMX_VERSION}.tar.gz
 rm -r /opt/gromacs-${GMX_VERSION}
 
+dnf clean all
+
+%test
+gmx --version
 
 %environment
 export PATH=$PATH:/opt/gromacs/bin/
