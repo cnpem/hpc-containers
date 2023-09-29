@@ -1,0 +1,53 @@
+BootStrap: docker
+From: opensuse/tumbleweed
+
+%files 
+../repos/wxPython-4.1.0-cp38-cp38-linux_x86_64.whl /opt/
+../repos/CellProfiler-4.2.4/ /opt/
+
+
+%post
+
+# curl -o /opt/wxPython-4.1.0-cp38-cp38-linux_x86_64.whl https://extras.wxpython.org/wxPython4/extras/linux/gtk3/fedora-31/wxPython-4.1.0-cp38-cp38-linux_x86_64.whl
+# zypper in -y tar gzip
+# curl -L https://github.com/CellProfiler/CellProfiler/archive/refs/tags/v4.2.4.tar.gz -s -o - | tar -xzf - -C /opt
+zypper in -y python38 python38-pip python38-devel gcc gcc-c++ make libmariadb-devel java-11-openjdk-devel gtk3-devel libnotify libSDL2-2_0-0 libSM6 sqlite3 crypto-policies-scripts libcanberra-gtk3-module appmenu-gtk3-module gtk3-metatheme-arc  
+zypper in -y -t pattern fonts 
+
+# error during install of fetchmsttfonts
+# zypper in -y find fetchmsttfonts 
+
+zypper clean
+# change crypto policy to match OMERO server default
+update-crypto-policies --set LEGACY
+export JAVA_HOME=/usr/lib64/jvm/java-11-openjdk/
+
+
+python3.8 -m venv --without-pip /opt/cellprofiler-venv
+
+source /opt/cellprofiler-venv/bin/activate
+pip3.8 install --upgrade pip numba
+mkdir /opt/cp-plugins
+curl -o /opt/cp-plugins/runcellpose.py https://raw.githubusercontent.com/CellProfiler/CellProfiler-plugins/master/runcellpose.py
+curl -o /opt/cp-plugins/predict.py https://raw.githubusercontent.com/CellProfiler/CellProfiler-plugins/master/predict.py
+curl -o /opt/cp-plugins/runimagejscript.py https://raw.githubusercontent.com/CellProfiler/CellProfiler-plugins/master/runimagejscript.py
+# see the same numpy API issue https://github.com/tensorflow/tensorflow/issues/57106
+# RuntimeError: module compiled against API version 0x10 but this version of numpy is 0xf 
+# Solution: use numpy==1.21
+pip3.8 install --no-cache-dir /opt/wxPython-4.1.0-cp38-cp38-linux_x86_64.whl cellpose --extra-index-url https://download.pytorch.org/whl/cu116
+cd /opt/CellProfiler-4.2.4
+pip3.8 install --no-cache-dir . 
+
+%environment
+export GTK_THEME=Arc
+
+%runscript
+source /opt/cellprofiler-venv/bin/activate
+# cellprofiler  $@
+cellprofiler --plugins-directory=/opt/cp-plugins/ $@
+
+
+%labels
+Author jose.pereira@lnbio.cnpem.br 
+Version v0.1
+Info OpenSuSE Tumbleweed with CellProfiler4 preinstalled.

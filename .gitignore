@@ -1,1 +1,5 @@
 **.sif
+sandboxes/ #dir to test singularity images during development 
+
+# especific
+np3_blob_label/np3_blob_label/
