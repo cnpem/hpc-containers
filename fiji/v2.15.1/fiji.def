@@ -1,0 +1,39 @@
+BootStrap: docker
+From: opensuse/leap:15.6
+
+%files 
+# copy fiji to opt
+./fiji-linux64.zip /opt/
+./IJ_Prefs.txt /opt/
+
+
+%post
+# install requirements
+zypper in -y unzip libXtst6 libXi6 libXrender1 xorg-x11-fonts
+
+zypper clean
+
+cd /opt
+unzip fiji-linux64.zip
+rm fiji-linux64.zip
+
+# disable updater
+# rm /opt/Fiji.app/jars/imagej-updater*.jar
+
+%environment
+
+
+%runscript
+if ! test -f ~/.imagej/IJ_Prefs.txt; then cp /opt/IJ_Prefs.txt ~/.imagej/; fi
+/opt/Fiji.app/ImageJ-linux64
+
+
+%labels
+Author jose.pereira@lnbio.cnpem.br 
+Version v0.1
+Info OpenSuSE Leap with FIJI preinstalled.
+
+%help
+FIJI version: 2.15.1
+Execute a imagem com: singularity run -B /run <image>
+Para passar parâmetros adicionais, como ver o help, execute: singularity exec -B /run /opt/Fiji.app/ImageJ-linux64 --help
