@@ -1,0 +1,46 @@
+BootStrap: docker
+From: opensuse/leap:15.6
+
+%files
+# copy patch to /opt
+./np3_workflow.patch /opt/np3_workflow.patch
+
+%post
+# install dependencies
+zypper in -y git nodejs-default npm-default glibc-devel patch libgomp1
+cd /opt
+# clone without history
+git clone --depth 1 https://github.com/danielatrivella/np3_ms_workflow.git
+
+# apply patch to write temporary files at /tmp
+patch np3_ms_workflow/np3_workflow.js < np3_workflow.patch
+
+# download and install miniforge
+curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh -b -p ./mambaforge
+rm Miniforge3-$(uname)-$(uname -m).sh
+# init conda
+. /opt/mambaforge/etc/profile.d/conda.sh
+
+cd np3_ms_workflow
+# create and activate conda environment
+conda env create -f environment_np3_unix.yml
+conda activate np3
+
+# install node dependencies and setup np3_workflow
+npm install shelljs@0.8.4 commander@5.1.0 
+node np3_workflow.js setup 
+
+%environment
+. /opt/mambaforge/etc/profile.d/conda.sh
+conda activate np3
+
+%runscript
+node /opt/np3_ms_workflow/np3_workflow $@ 
+
+%labels
+Author "José Geraldo de Carvalho Pereira <jose.pereira@lnbio.cnpem.br>"
+Version "0.1"
+
+%help
+This is a container for the np3_ms_workflow tool. It is a workflow for the analysis of mass spectrometry data.
