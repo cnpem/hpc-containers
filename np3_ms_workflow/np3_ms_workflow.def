@@ -3,17 +3,19 @@ From: opensuse/leap:15.6
 
 %files
 # copy patch to /opt
-./np3_workflow.patch /opt/np3_workflow.patch
+# ./np3_workflow.patch /opt/np3_workflow.patch
 
 %post
 # install dependencies
-zypper in -y git nodejs-default npm-default glibc-devel patch libgomp1
+zypper in -y git nodejs-default npm-default glibc-devel patch libgomp1 gcc12-fortran gcc12
 cd /opt
 # clone without history
-git clone --depth 1 https://github.com/danielatrivella/np3_ms_workflow.git
+# git clone --depth 1 https://github.com/danielatrivella/np3_ms_workflow.git
+# using a personal fork to avoid issues with the original repo
+git clone --depth 1 https://github.com/zgcarvalho/np3_ms_workflow.git
 
 # apply patch to write temporary files at /tmp
-patch np3_ms_workflow/np3_workflow.js < np3_workflow.patch
+# patch np3_ms_workflow/np3_workflow.js < np3_workflow.patch
 
 # download and install miniforge
 curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
@@ -41,6 +43,16 @@ node /opt/np3_ms_workflow/np3_workflow $@
 %labels
 Author "José Geraldo de Carvalho Pereira <jose.pereira@lnbio.cnpem.br>"
 Version "0.1"
+
+%test
+echo "Testing np3_ms_workflow container..."
+node /opt/np3_ms_workflow/np3_workflow --version
+if [ $? -eq 0 ]; then
+    echo "Version test passed"
+else
+    echo "Version test failed"
+    exit 1
+fi
 
 %help
 This is a container for the np3_ms_workflow tool. It is a workflow for the analysis of mass spectrometry data.
