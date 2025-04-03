@@ -1,0 +1,5 @@
+BootStrap: docker
+From: interpro/interproscan:5.73-104.0
+
+%runscript
+/opt/interproscan/interproscan.sh $@
