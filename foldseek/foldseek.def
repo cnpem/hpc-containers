@@ -1,0 +1,18 @@
+BootStrap: docker
+From: opensuse/leap:15.6
+
+%files
+./foldseek-linux-gpu.tar.gz /opt/foldseek-linux-gpu.tar.gz
+
+%post
+zypper in -y tar gzip
+tar -xzf /opt/foldseek-linux-gpu.tar.gz -C /opt
+rm /opt/foldseek-linux-gpu.tar.gz
+
+%environment
+export PATH=/opt/foldseek/bin:$PATH
+
+%runscript
+foldseek $@
+
+
