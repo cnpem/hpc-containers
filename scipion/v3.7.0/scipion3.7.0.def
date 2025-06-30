@@ -1,0 +1,195 @@
+Bootstrap: docker
+From:nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+
+%labels
+MAINTAINER bruno.focassio@lnnano.cnpem.br
+
+%files
+hosts.conf /opt
+
+%environment
+export PATH=/opt/scipion/:$PATH
+export PATH=/root/.local/bin/:$PATH
+export BASH_ENV=/opt/etc/bashrc
+export CUDA_COMPUTE_CAP=86
+export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin:$PATH
+export PYTHONPATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH
+
+%post
+export TZ='America/Sao_Paulo'
+export DEBIAN_FRONTEND=noninteractive
+
+#install scipion dependencies
+apt update
+apt install -y software-properties-common lsb-release build-essential
+apt install -y gcc-10 g++-10 libopenmpi-dev make git wget unzip libfftw3-dev libopenmpi-dev libhdf5-dev python3-numpy python3-dev libtiff5-dev libsqlite3-dev default-jdk libjpeg-dev
+apt clean -y
+
+# install miniconda
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -P /opt
+bash /opt/Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda3
+rm /opt/Miniconda3-latest-Linux-x86_64.sh
+
+#activate shell based environment
+eval "$(/opt/miniconda3/bin/conda shell.bash hook)"
+
+mkdir -p /opt/etc
+echo "#! /bin/bash " > ~/.bashrc
+echo "__conda_setup=\"\$('/opt/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\"" >> ~/.bashrc
+echo "if [ \$? -eq 0 ]; then" >> ~/.bashrc
+echo "    eval \"\$__conda_setup\""  >> ~/.bashrc
+echo "else" >> ~/.bashrc
+echo "    if [ -f \"/opt/miniconda3/etc/profile.d/conda.sh\" ]; then" >> ~/.bashrc
+echo "        . \"/opt/miniconda3/etc/profile.d/conda.sh\"" >> ~/.bashrc
+echo "    else" >> ~/.bashrc
+echo "        export PATH=\"/opt/miniconda3/bin:\$PATH\"" >> ~/.bashrc
+echo "    fi" >> ~/.bashrc
+echo "fi" >> ~/.bashrc
+echo "unset __conda_setup" >> ~/.bashrc
+echo "" >> ~/.bashrc
+cp ~/.bashrc /opt/etc/bashrc
+
+# create dir for scipion
+mkdir -p /opt/scipion
+
+# get scipion3 installer
+pip3 install --user scipion-installer
+
+# install core scipion
+python3 -m scipioninstaller -noXmipp -noAsk /opt/scipion
+
+# create scipion.conf file
+/opt/scipion/scipion3 config --overwrite --unattended
+
+# create the alias for calling scipion3
+alias scipion3="/opt/scipion/scipion3"
+echo "alias scipion3=\"/opt/scipion/scipion3\"" >> ~/.bashrc
+
+#change scipion.conf to correct paths
+echo "" >> /opt/scipion/config/scipion.conf
+echo "CUDA = True" >> /opt/scipion/config/scipion.conf
+echo "CUDA_BIN = /usr/local/cuda-11.8/bin" >> /opt/scipion/config/scipion.conf
+echo "CUDA_LIB = /usr/local/cuda-11.8/lib64" >> /opt/scipion/config/scipion.conf
+echo "MPI_BINDIR = /usr/bin" >> /opt/scipion/config/scipion.conf
+echo "MPI_LIBDIR = /usr/lib" >> /opt/scipion/config/scipion.conf
+echo "MPI_INCLUDE = /usr/include/" >> /opt/scipion/config/scipion.conf
+echo "OPENCV = False" >> /opt/scipion/config/scipion.conf
+
+# fix GUI fonts
+scipion3 run "conda install -y -c conda-forge tk=*=xft_*"
+
+## install plugins
+# first xmipp which is the most problematic
+/opt/scipion/scipion3 run "conda install -y cmake=3.31"
+/opt/scipion/scipion3 install -p scipion-em-xmipp -j 6  | tee -a install.log
+
+# 
+# conda clean --tarballs -y && python -m pip cache purge
+# rm -f /opt/scipion/software/em/*.*gz && rm -f /opt/scipion/software/em/*.tar
+
+# this is needed somehow, scipion guys told me to
+ln -s /usr/lib/x86_64-linux-gnu/libffi.so.7 /usr/lib/x86_64-linux-gnu/libffi.so.6
+
+# install some basic plugins
+/opt/scipion/scipion3 installp -p scipion-em-motioncorr -p scipion-em-imod -p scipion-em-sphire
+
+# You have to modify scipion conf file to select from the exectuables
+# the one with the correct cuda of your system, glad we know which cuda we have from the start
+/opt/scipion/scipion3 installp -p scipion-em-aretomo
+echo "" >> /opt/scipion/config/scipion.conf
+echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> /opt/scipion/config/scipion.conf
+
+# next is relion
+apt install -y mpi-default-bin mpi-default-dev libfftw3-dev libtiff-dev libpng-dev ghostscript libxft-dev
+conda install -y cmake=3.31
+cd /opt/scipion/software/em/
+git clone https://github.com/3dem/relion.git
+cd relion/
+git checkout ver5.0
+conda env create -f environment.yml
+mkdir -p build
+cd build/
+cmake -DCUDA_ARCH=$CUDA_COMPUTE_CAP ..
+make -j 6
+cd /opt/scipion/software/em/
+ln -s /opt/scipion/software/em/relion/build /opt/scipion/software/em/relion-5.0
+cd
+alias relion="/scipion/software/em/relion-5.0/bin/relion"
+echo "" >> ~/.bashrc
+echo "alias relion=\"/scipion/software/em/relion-5.0/bin/relion\"" >> ~/.bashrc
+
+scipion3 run "pip install scipion-em-relion scipion-em-reliontomo"
+
+/opt/scipion/scipion3 installp -p scipion-em-tomo
+
+# this one is giving me gpu problems, need to check
+# there is a conflict between running a container with --writeable and --nv
+# /opt/scipion/scipion3 installp -p scipion-em-dynamo
+
+/opt/scipion/scipion3 installp -p scipion-em-sphire
+
+wget -O /opt/scipion/software/em/cistem-1.0.0-beta.tgz.part http://grigoriefflab.umassmed.edu/sites/default/files/cistem-1.0.0-beta-intel-linux.tar.gz
+/opt/scipion/scipion3 installp -p scipion-em-cistem
+
+# this one needs GUI for accepting the licesing terms, which is obiously a problem here
+# /opt/scipion/scipion3 installp -p scipion-em-chimera
+
+/opt/scipion/scipion3 installp -p scipion-em-eman2 -p scipion-em-emantomo
+
+/opt/scipion/scipion3 installp -p scipion-em-cryocare -p scipion-em-deepfinder -p scipion-em-fidder
+
+/opt/scipion/scipion3 installp -p scipion-em-tomo3d -p scipion-em-tomosegmemtv
+
+/opt/scipion/scipion3 installp -p scipion-em-warp
+
+apt-get install libgsl-dev -y
+/opt/scipion/scipion3 installp -p scipion-em-pyseg
+
+# # there is not an production release of this one, you may want to skip it
+# cd /opt/scipion/software/em
+# git clone https://github.com/scipion-em/scipion-em-membrain.git
+# /opt/scipion/scipion3 installp -p /opt/scipion/software/em/scipion-em-membrain --devel
+# cd
+
+apt install -y bison flex
+scipion3 installp -p scipion-em-atomstructutils -p scipion-em-ccp4
+
+scipion3 installp -p scipion-em-cryoassess
+# now you need to download the model weights and put it in the model folders
+# according to scipion3 printenv /opt/scipion/software/em/cryoassess-models
+# the model weights can be found in https://github.com/scipion-em/scipion-em-cryoassess
+# cp ..... /opt/scipion/software/em/cryoassess-models/.
+
+scipion3 installp -p scipion-em-empiar -p scipion-em-facilities -p scipion-em-gautomatch -p scipion-em-localrec -p scipion-em-miffi
+
+scipion3 installp -p scipion-em-modelangelo -p scipion-em-spider -p scipion-em-isonet
+
+echo "" >> ~/.bashrc
+echo "export PYTHONPATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH" >> ~/.bashrc
+echo "export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> ~/.bashrc
+
+apt clean -y
+pip3 cache purge
+conda clean --tarballs -y
+rm -f /opt/scipion/software/em/*.*gz && rm -f /opt/scipion/software/em/*.tar
+
+# /opt/scipion3 config --update
+
+# #edit parameters to be able to use slurm
+# echo "slurmadmin:x:300:300::/usr/lib64/slurm:/bin/false" >> /etc/passwd
+# echo "slurmadmin:x:300:" >> /etc/group
+# adduser --disabled-password --gecos "" slurm
+
+# #move host.conf imported file to correct place
+mv /opt/hosts.conf /opt/scipion/config/hosts.conf
+
+%test
+    grep -q NAME=\"Ubuntu\" /etc/os-release
+    if [ $? -eq 0 ]; then
+        echo "Container base is Ubuntu as expected."
+    else
+        echo "Container base is not Ubuntu."
+    fi
+
+%runscript
+exec '$@'

@@ -1,0 +1,22 @@
+BootStrap: localimage
+From: scipion-base.def
+
+%labels
+  MAINTAINER joao.guerra@lnbio.cnpem.br
+  VERSION 3.7.0
+
+%help
+  Tomography package add-on for Apptainer/Singularity base image
+
+%files
+/scipion
+/opt
+
+%post
+/scipion/scipion3 installp -p scipion-em-tomo
+/scipion/scipion3 installp -p scipion-em-xmipptomo
+/scipion/scipion3 installp -p scipion-em-tomotwin
+/scipion/scipion3 installp -p scipion-em-tomoviz
+/scipion/scipion3 installp -p scipion-em-sphire
+
+
