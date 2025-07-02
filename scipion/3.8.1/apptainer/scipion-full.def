@@ -1,0 +1,57 @@
+BootStrap: localimage
+From: scipion-base.sif
+
+%labels
+MAINTAINER bruno.focassio@lnnano.cnpem.br
+MAINTAINER joao.guerra@lnbio.cnpem.br
+MAINTAINER jose.pereira@lnbio.cnpem.br
+VERSION 3.8.1
+
+%help
+Tomography and SPA packages add-on for Apptainer/Singularity base image
+
+%post
+# Export tz for apt so it does not block on install
+export DEBIAN_FRONTEND=noninteractive
+
+# Update apt repositories
+apt update
+apt install -y --no-install-recommends --no-install-suggests mpi-default-bin mpi-default-dev libtiff-dev libpng-dev ghostscript libxft-dev
+
+# Install tomography plugins (Ok)
+# /scipion/scipion3 installp -p scipion-em-motioncorr
+# /scipion/scipion3 installp -p scipion-em-sphire
+# /scipion/scipion3 installp -p scipion-em-tomo
+# /scipion/scipion3 installp -p scipion-em-tomotwin
+# /scipion/scipion3 installp -p scipion-em-tomoviz
+# /scipion/scipion3 installp -p scipion-em-xmipptomo
+
+# Aretomo package (Ok)
+#   You need to modify the Scipion configuration file to select the executable
+#   that matches the CUDA version of your system.
+#   binary: scipion/software/em/aretomo2-1.1.3/bin/AreTomo2_1.1.3_Cuda118
+# /scipion/scipion3 installp -p scipion-em-aretomo
+# echo "" >> /scipion/config/scipion.conf
+# echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> /scipion/config/scipion.conf
+
+# Cistem package (Ok)
+/scipion/scipion3 installp -p scipion-em-cistem
+
+# Dynamo package (ERROR)
+# /scipion/scipion3 installp -p scipion-em-dynamo
+
+# IMOD package (ERROR)
+# /scipion/scipion3 installp -p scipion-em-imod
+
+# Relion package (Ok)
+# /scipion/scipion3 installp -p scipion-em-relion
+# /scipion/scipion3 installp -p scipion-em-reliontomo
+
+# Cleaning tasks for space optimisation
+apt clean
+apt autoclean
+apt autoremove
+rm -rf /var/lib/apt/lists/*
+unset DEBIAN_FRONTEND
+
+%runscript
