@@ -1,7 +1,11 @@
+# Singularity/Apptainer files
+.build
 **.sif
-sandboxes/ #dir to test singularity images during development 
+sandboxes/
+logs/
 
-# especific
+# Specific directories
 np3_blob_label/np3_blob_label/
 
+# Compressed files
 **.tar.gz
