@@ -7,7 +7,7 @@
 # José Geraldo Pereira @ LNBio/CNPEM - jose.pereira@lnbio.cnpem.br
 
 #### USER CONFIGURABLE VARIABLES
-CONTAINER=/opt/images/scipion/3.8.1/scipion.sif
+CONTAINER=scipion-base.sif
 
 ### CLUSTER SPECIFIC
 # You can add your cluster-specific commands here
@@ -62,7 +62,8 @@ SCIPSLURM_CTRL=" --bind $SCIPSLURM_BIN/squeue --bind $SCIPSLURM_BIN/sinfo \
                  --bind $SCIPSLURM_BIN/scontrol --bind $SCIPSLURM_BIN/sstat --bind $SCIPSLURM_BIN/sacct "
 # SCIPSLURM_CONF=" --bind $SCIPSLURM_BASE --bind $SCIPSLURM_HOSTSCONF:/scipion/config/hosts.conf "
 SCIPSLURM_CONF=" --bind $SCIPSLURM_BASE "
-SCIPSLURM_LIBS=" --bind $SCIPSLURM_LIB --bind $SCIPSLURM_PLUGINS "
+SCIPSLURM_LIBS=" --bind $SCIPSLURM_LIB"
+# SCIPSLURM_LIBS=" --bind $SCIPSLURM_LIB --bind $SCIPSLURM_PLUGINS "
 # UNCOMMENT THIS LINE WHEN USING SLURM
 SCIPSLURM_CMD=" $SCIPSLURM_JOBS $SCIPSLURM_CTRL $SCIPSLURM_CONF $SCIPSLURM_LIBS "
 # END OF SLURM CONFIGURATION VARIABLES
@@ -74,7 +75,7 @@ SCIPSLURM_CMD=" $SCIPSLURM_JOBS $SCIPSLURM_CTRL $SCIPSLURM_CONF $SCIPSLURM_LIBS 
 # LIB is usually /usr/lib/x86_64-linux-gnu/openmpi (Ubuntu-APT) or /usr/lib64/openmpi/ (CentOS-YUM)
 # Depending on your system, it might also be in /opt or even be mpich instead of openmpi
 # If in doubt, check with your nearest IT manager
-SCIPMPI_LIB=" /usr/lib/x86_64-linux-gnu/openmpi "
+SCIPMPI_LIB=" /opt/images/openmpi/4.1.4"
 SCIPMPI_CMD=" --bind $SCIPMPI_LIB --bind /tmp "
 # END OF MPI CONFIGURATION VARIABLES
 ### END #######################################################################
@@ -104,16 +105,16 @@ fi
 echo "Preparing to launch Scipion Container"
 LAUNCH_CMD="$CONTAINER_CMD exec --nv --containall \
             --env DISPLAY=$DISPLAY --env SCIPION_USER_DATA=$SCIPION_PROJDIR \
-            --bind /run --bind /tmp/.X11-unix --bind /etc/resolv.conf \
+            --bind /run --bind /etc/resolv.conf \
             --bind $SCIPION_DATADIR:/data --bind $SCIPION_LOGDIR:/logs --bind $SCIPION_PROJDIR \
             $SCIPCRYOASSESS_CMD $SCIPSLURM_CMD $SCIPMPI_CMD \
             $CONTAINER"
 
 if [ "$#" -gt 0 ]; then
     echo "Launching $CONTAINER with parameters..."
-    echo $LAUNCH_CMD /scipion/scipion3 run $@
+    $LAUNCH_CMD /scipion/scipion3 run $@
 else
     echo "Launching $CONTAINER in standalone mode..."
     echo "Launching Scipion container for $CONTAINER"
-    echo $LAUNCH_CMD /scipion/scipion3
+    $LAUNCH_CMD /scipion/scipion3
 fi
