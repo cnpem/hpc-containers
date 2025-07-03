@@ -78,7 +78,7 @@ echo "SCIPION_LOGS = ${SCIPION_USER_DATA}/logs" >> /scipion/config/scipion.conf
 
 # Basic programs: Xmipp and ChimeraX for visualisation
 /scipion/scipion3 run "conda install -y cmake=3.31"
-/scipion/scipion3 installp -p scipion-em-xmipp -j 12 | tee -a install.log
+/scipion/scipion3 installp -p scipion-em-xmipp -j 48 | tee -a install.log
 # /scipion/scipion3 installb deepLearningToolkit
 
 # List binaries

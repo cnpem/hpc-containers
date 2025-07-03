@@ -25,21 +25,21 @@ apt install -y --no-install-recommends --no-install-suggests mpi-default-bin mpi
 #   You need to modify the Scipion configuration file to select the executable
 #   that matches the CUDA version of your system.
 #   binary: scipion/software/em/aretomo2-1.1.3/bin/AreTomo2_1.1.3_Cuda118
-/scipion/scipion3 installp -p scipion-em-aretomo -j 12
+/scipion/scipion3 installp -p scipion-em-aretomo -j 48
 echo "" >> /scipion/config/scipion.conf
 echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> /scipion/config/scipion.conf
 
 # Atomic structural utils package (ERROR)
-# /scipion/scipion3 installp -p scipion-em-atomstructutils -j 12
+# /scipion/scipion3 installp -p scipion-em-atomstructutils -j 48
 
 # CCP4 package (Ok)
-/scipion/scipion3 installp -p scipion-em-ccp4 -j 12
+/scipion/scipion3 installp -p scipion-em-ccp4 -j 48
 
 # CisTEM package (Ok)
-/scipion/scipion3 installp -p scipion-em-cistem -j 12
+/scipion/scipion3 installp -p scipion-em-cistem -j 48
 
 # CryoAssess package (Ok)
-/scipion/scipion3 installp -p scipion-em-cryoassess -j 12
+/scipion/scipion3 installp -p scipion-em-cryoassess -j 48
 # Download the CryoAssess model weights and place them in the correct directory.
 # You can find the required model files at:
 #   https://github.com/scipion-em/scipion-em-cryoassess/tree/master/data/models
@@ -50,37 +50,37 @@ echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> /scipion/config/scipion.conf
 # Ensure all necessary model files are copied to this directory for CryoAssess to function properly.
 
 # Cryocare package (Ok)
-/scipion/scipion3 installp -p scipion-em-cryocare -j 12
+/scipion/scipion3 installp -p scipion-em-cryocare -j 48
 
 # DeepFinder package (Ok)
-/scipion/scipion3 installp -p scipion-em-deepfinder -j 12
+/scipion/scipion3 installp -p scipion-em-deepfinder -j 48
 
 # Dynamo package (ERROR)
-# /scipion/scipion3 installp -p scipion-em-dynamo -j 12
+# /scipion/scipion3 installp -p scipion-em-dynamo -j 48
 
 # Eman2 packages (Ok)
-/scipion/scipion3 installp -p scipion-em-eman2 -j 12
+/scipion/scipion3 installp -p scipion-em-eman2 -j 48
 
 # EmanTomo package (Ok)
-/scipion/scipion3 installp -p scipion-em-emantomo -j 12
+/scipion/scipion3 installp -p scipion-em-emantomo -j 48
 
 # Empiar package (Ok)
-/scipion/scipion3 installp -p scipion-em-empiar -j 12
+/scipion/scipion3 installp -p scipion-em-empiar -j 48
 
 # Scipion for facilities package (Ok)
-/scipion/scipion3 installp -p scipion-em-facilities -j 12
+/scipion/scipion3 installp -p scipion-em-facilities -j 48
 
 # Fidder package (Ok)
-/scipion/scipion3 installp -p scipion-em-fidder -j 12
+/scipion/scipion3 installp -p scipion-em-fidder -j 48
 
 # Gautomatch picker package (Ok)
-/scipion/scipion3 installp -p scipion-em-gautomatch -j 12
+/scipion/scipion3 installp -p scipion-em-gautomatch -j 48
 
 # IMOD package (ERROR)
-# /scipion/scipion3 installp -p scipion-em-imod -j 12
+# /scipion/scipion3 installp -p scipion-em-imod -j 48
 
 # IsoNet package (Ok)
-/scipion/scipion3 installp -p scipion-em-isonet -j 12
+/scipion/scipion3 installp -p scipion-em-isonet -j 48
 # Add environment variables:
 # PYTHONPATH and PATH for IsoNet
 # export PATH=PATH_TO_ISONET_FOLDER/bin:$PATH 
@@ -90,58 +90,58 @@ echo "export PYTHONPATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH
 echo "export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> ~/.bashrc
 
 # Localized Reconstruction (Locarec) package (Ok)
-/scipion/scipion3 installp -p scipion-em-localrec -j 12
+/scipion/scipion3 installp -p scipion-em-localrec -j 48
 
 # MemBrain package (Ok)
 # NOTE: The MemBrain package does not have an official production release.
 # You must install it manually by cloning the repository and installing in development mode.
 cd /scipion/software/em
 git clone https://github.com/scipion-em/scipion-em-membrain.git
-/scipion/scipion3 installp -p /scipion/software/em/scipion-em-membrain --devel -j 12
+/scipion/scipion3 installp -p /scipion/software/em/scipion-em-membrain --devel -j 48
 cd
 
 # Miffi (Cryo-EM micrograph filtering utilizing Fourier space information) package (Ok)
-/scipion/scipion3 installp -p scipion-em-miffi -j 12
+/scipion/scipion3 installp -p scipion-em-miffi -j 48
 
 # ModelAngelo package (Ok)
-/scipion/scipion3 installp -p scipion-em-modelangelo -j 12
+/scipion/scipion3 installp -p scipion-em-modelangelo -j 48
 
 # motioncor3 package (Ok)
-/scipion/scipion3 installp -p scipion-em-motioncorr -j 12
+/scipion/scipion3 installp -p scipion-em-motioncorr -j 48
 
 # PySeg package (Ok)
-/scipion/scipion3 installp -p scipion-em-pyseg -j 12
+/scipion/scipion3 installp -p scipion-em-pyseg -j 48
 
 # Relion package (Ok)
-/scipion/scipion3 installp -p scipion-em-relion -j 12
-/scipion/scipion3 installp -p scipion-em-reliontomo -j 12
+/scipion/scipion3 installp -p scipion-em-relion -j 48
+/scipion/scipion3 installp -p scipion-em-reliontomo -j 48
 
 # Sphire package (Ok)
-/scipion/scipion3 installp -p scipion-em-sphire -j 12
+/scipion/scipion3 installp -p scipion-em-sphire -j 48
 
 # Spider package (Ok)
-/scipion/scipion3 installp -p scipion-em-spider -j 12
+/scipion/scipion3 installp -p scipion-em-spider -j 48
 
 # Tomography package (Ok)
-/scipion/scipion3 installp -p scipion-em-tomo -j 12
+/scipion/scipion3 installp -p scipion-em-tomo -j 48
 
 # Tomo3DEM package (Ok)
-/scipion/scipion3 installp -p scipion-em-tomo3d -j 12
+/scipion/scipion3 installp -p scipion-em-tomo3d -j 48
 
 # TomoSegMemTV package (Ok)
-/scipion/scipion3 installp -p scipion-em-tomosegmemtv -j 12
+/scipion/scipion3 installp -p scipion-em-tomosegmemtv -j 48
 
 # TomoTwin package (Ok)
-/scipion/scipion3 installp -p scipion-em-tomotwin -j 12
+/scipion/scipion3 installp -p scipion-em-tomotwin -j 48
 
 # Tomography 3D visualization package (Ok)
-/scipion/scipion3 installp -p scipion-em-tomoviz -j 12
+/scipion/scipion3 installp -p scipion-em-tomoviz -j 48
 
 # Warp package (Ok)
 /scipion/scipion3 installp -p scipion-em-warp
 
 # Xmipp tomography package (Ok)
-/scipion/scipion3 installp -p scipion-em-xmipptomo -j 12
+/scipion/scipion3 installp -p scipion-em-xmipptomo -j 48
 
 # Set hosts.conf file
 # This file is used to configure the hosts for Scipion.
