@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Scipion Containers builder script for end users and system administrators
-# AUTHORS:
-#   Bruno Focassio bruno.focassio@lnnano.cnpem.br
-#   João V S Guerra joao.guerra@lnbio.cnpem.br
-#   Jose G C Pereira jose.pereira@lnbio.cnpem.br
-#
+
+# AUTHORS
+# Bruno Focassio bruno.focassio@lnnano.cnpem.br
+# João V S Guerra joao.guerra@lnbio.cnpem.br
+# Jose G C Pereira jose.pereira@lnbio.cnpem.br
 
 #### USER CONFIGURABLE VARIABLES
 ###

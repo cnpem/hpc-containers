@@ -90,9 +90,19 @@ SCIPMPI_CMD=" --bind $SCIPMPI_LIB --bind /tmp "
 ###
 #### END OF USER CONFIGURABLE VARIABLES
 
+# Check if apptainer or singularity is available
+if command -v apptainer &> /dev/null; then
+    CONTAINER_CMD="apptainer"
+elif command -v singularity &> /dev/null; then
+    CONTAINER_CMD="singularity"
+else
+    echo "Error: Neither apptainer nor singularity is installed."
+    exit 1
+fi
+
 # Do not touch below here unless you know what you are doing!
 echo "Preparing to launch Scipion Container"
-LAUNCH_CMD="apptainer exec --nv --containall \
+LAUNCH_CMD="$CONTAINER_CMD exec --nv --containall \
             --env DISPLAY=$DISPLAY --env SCIPION_USER_DATA=$SCIPION_PROJDIR \
             --bind /run --bind /tmp/.X11-unix --bind /etc/resolv.conf \
             --bind $SCIPION_DATADIR:/data --bind $SCIPION_LOGDIR:/logs --bind $SCIPION_PROJDIR \
