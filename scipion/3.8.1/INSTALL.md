@@ -13,34 +13,25 @@ wget https://github.com/apptainer/apptainer/releases/download/v1.4.1/apptainer_1
 sudo apt install -y ./apptainer_1.4.1_amd64.deb
 ```
 
-## Base Container
+## Scipion container
 
-This section describes how to build the base container for Scipion on HPC systems using Apptainer.
+This section describes how to build the Scipion container on HPC systems using Apptainer.
 
-To build the `scipion-base` container, run the following command:
-
-```bash
-APPTAINER_DISPLAY=$DISPLAY apptainer build --nv --force ./build/scipion-base.sif ./apptainer/scipion-base.def
-```
-
-To run the `base` container, use the following command:
+To build the `scipion-base` and `scipion-full` container, run the following command:
 
 ```bash
-apptainer exec --nv --containall --env DISPLAY=$DISPLAY --bind /run --bind /tmp/.X11-unix --bind /etc/resolv.conf --bind  /usr/lib/x86_64-linux-gnu/openmpi  --bind /tmp --bind $(pwd)/logs:/logs scipion-base.sif  /scipion/scipion3
-```
-
-## Full Container
-
-This section describes how to build the Scipion container with the Tomography packages.
-
-To build the `scipion-full` container, run the following command:
-
-```bash
-APPTAINER_DISPLAY=$DISPLAY apptainer build --nv --force ./build/scipion-full.sif ./apptainer/scipion-full.def
+./build.sh
 ```
 
 To run the `scipion-full` container, use the following command:
 
 ```bash
-apptainer exec --nv --containall --env DISPLAY=$DISPLAY --bind /run --bind /tmp/.X11-unix --bind /etc/resolv.conf --bind  /usr/lib/x86_64-linux-gnu/openmpi  --bind /tmp --bind $(pwd)/logs:/logs build/scipion-full.sif  /scipion/scipion3
+export CONTAINER=/opt/images/scipion/3.8.1/scipion.sif
+apptainer exec --nv --containall --env DISPLAY=$DISPLAY --env SCIPION_USER_DATA=$HOME/ScipionUserData --bind /run --bind /tmp/.X11-unix --bind /etc/resolv.conf --bind $HOME/ScipionUserData/data:/data --bind $HOME/ScipionUserData/logs:/logs --bind $HOME/ScipionUserData --bind /usr/bin/sbatch --bind /usr/bin/srun --bind /usr/bin/scancel --bind /usr/bin/salloc --bind /usr/bin/squeue --bind /usr/bin/sinfo --bind /usr/bin/scontrol --bind /usr/bin/sstat --bind /usr/bin/sacct --bind /etc/slurm --bind /usr/lib64/slurm --bind /usr/lib64/slurm --bind /usr/lib/x86_64-linux-gnu/openmpi --bind /tmp $CONTAINER /scipion/scipion3
+```
+
+or,
+
+```bash
+./launcher.sh
 ```

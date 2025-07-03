@@ -78,7 +78,7 @@ echo "SCIPION_LOGS = ${SCIPION_USER_DATA}/logs" >> /scipion/config/scipion.conf
 
 # Basic programs: Xmipp and ChimeraX for visualisation
 /scipion/scipion3 run "conda install -y cmake=3.31"
-/scipion/scipion3 installp -p scipion-em-xmipp -j 6 | tee -a install.log
+/scipion/scipion3 installp -p scipion-em-xmipp -j 12 | tee -a install.log
 # /scipion/scipion3 installb deepLearningToolkit
 
 # List binaries
@@ -88,13 +88,15 @@ echo "SCIPION_LOGS = ${SCIPION_USER_DATA}/logs" >> /scipion/config/scipion.conf
 # /scipion/scipion3 installp --help
 
 ln -s /usr/lib/x86_64-linux-gnu/libffi.so /usr/lib/x86_64-linux-gnu/libffi.so.6
-/scipion/scipion3 installp -p scipion-em-chimera
+/scipion/scipion3 installp -p scipion-em-chimera -j 12
 
 # Cleaning tasks for space optimisation
 apt clean
 apt autoclean
 apt autoremove
 rm -rf /var/lib/apt/lists/*
+rm -f /scipion/software/em/*.*gz
+rm -f /scipion/software/em/*.tar
 unset DEBIAN_FRONTEND
 
 %runscript

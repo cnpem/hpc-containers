@@ -10,48 +10,158 @@ VERSION 3.8.1
 %help
 Tomography and SPA packages add-on for Apptainer/Singularity base image
 
+%files
+apptainer/hosts.conf /scipion/config/hosts.conf
+
 %post
 # Export tz for apt so it does not block on install
 export DEBIAN_FRONTEND=noninteractive
 
 # Update apt repositories
 apt update
-apt install -y --no-install-recommends --no-install-suggests mpi-default-bin mpi-default-dev libtiff-dev libpng-dev ghostscript libxft-dev
-
-# Install tomography plugins (Ok)
-# /scipion/scipion3 installp -p scipion-em-motioncorr
-# /scipion/scipion3 installp -p scipion-em-sphire
-# /scipion/scipion3 installp -p scipion-em-tomo
-# /scipion/scipion3 installp -p scipion-em-tomotwin
-# /scipion/scipion3 installp -p scipion-em-tomoviz
-# /scipion/scipion3 installp -p scipion-em-xmipptomo
+apt install -y --no-install-recommends --no-install-suggests mpi-default-bin mpi-default-dev libtiff-dev libpng-dev ghostscript libxft-dev libgsl-dev tcsh
 
 # Aretomo package (Ok)
 #   You need to modify the Scipion configuration file to select the executable
 #   that matches the CUDA version of your system.
 #   binary: scipion/software/em/aretomo2-1.1.3/bin/AreTomo2_1.1.3_Cuda118
-# /scipion/scipion3 installp -p scipion-em-aretomo
+# /scipion/scipion3 installp -p scipion-em-aretomo -j 12
 # echo "" >> /scipion/config/scipion.conf
 # echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> /scipion/config/scipion.conf
 
-# Cistem package (Ok)
-/scipion/scipion3 installp -p scipion-em-cistem
+# Atomic structural utils package (ERROR)
+# /scipion/scipion3 installp -p scipion-em-atomstructutils -j 12
+
+# CCP4 package (Ok)
+# /scipion/scipion3 installp -p scipion-em-ccp4 -j 12
+
+# CisTEM package (Ok)
+# /scipion/scipion3 installp -p scipion-em-cistem -j 12
+
+# CryoAssess package (Ok)
+# /scipion/scipion3 installp -p scipion-em-cryoassess -j 12
+# Download the CryoAssess model weights and place them in the correct directory.
+# You can find the required model files at:
+#   https://github.com/scipion-em/scipion-em-cryoassess/tree/master/data/models
+# The target directory inside the container is:
+#   /scipion/software/em/cryoassess-models/
+# Example command (replace MODEL_FILE with the actual filename):
+#   cp /path/to/MODEL_FILE /scipion/software/em/cryoassess-models/
+# Ensure all necessary model files are copied to this directory for CryoAssess to function properly.
+
+# Cryocare package (Ok)
+# /scipion/scipion3 installp -p scipion-em-cryocare -j 12
+
+# DeepFinder package (Ok)
+# /scipion/scipion3 installp -p scipion-em-deepfinder -j 12
 
 # Dynamo package (ERROR)
-# /scipion/scipion3 installp -p scipion-em-dynamo
+cd /scipion/software/em
+git clone -b devel https://github.com/scipion-em/scipion-em-dynamo.git
+/scipion/scipion3 installp -p /scipion/software/em/scipion-em-dynamo --devel -j 12
+cd
+# /scipion/scipion3 installp -p scipion-em-dynamo -j 12
+
+# Eman2 packages (Ok)
+# /scipion/scipion3 installp -p scipion-em-eman2 -j 12
+
+# EmanTomo package (Ok)
+# /scipion/scipion3 installp -p scipion-em-emantomo -j 12
+
+# Empiar package (Ok)
+# /scipion/scipion3 installp -p scipion-em-empiar -j 12
+
+# Scipion for facilities package (Ok)
+# /scipion/scipion3 installp -p scipion-em-facilities -j 12
+
+# Fidder package (Ok)
+# /scipion/scipion3 installp -p scipion-em-fidder -j 12
+
+# Gautomatch picker package (Ok)
+# /scipion/scipion3 installp -p scipion-em-gautomatch -j 12
 
 # IMOD package (ERROR)
-# /scipion/scipion3 installp -p scipion-em-imod
+# /scipion/scipion3 installp -p scipion-em-imod -j 12
+
+# IsoNet package (Ok)
+# /scipion/scipion3 installp -p scipion-em-isonet -j 12
+# Add environment variables:
+# PYTHONPATH and PATH for IsoNet
+# export PATH=PATH_TO_ISONET_FOLDER/bin:$PATH 
+# export PYTHONPATH=PATH_TO_PARENT_FOLDER_OF_ISONET_FOLDER:$PYTHONPATH 
+# echo "" >> ~/.bashrc
+# echo "export PYTHONPATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH" >> ~/.bashrc
+# echo "export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> ~/.bashrc
+
+# Localized Reconstruction (Locarec) package (Ok)
+# /scipion/scipion3 installp -p scipion-em-localrec -j 12
+
+# MemBrain package (Ok)
+# NOTE: The MemBrain package does not have an official production release.
+# You must install it manually by cloning the repository and installing in development mode.
+# cd /scipion/software/em
+# git clone https://github.com/scipion-em/scipion-em-membrain.git
+# /scipion/scipion3 installp -p /scipion/software/em/scipion-em-membrain --devel -j 12
+# cd
+
+# Miffi (Cryo-EM micrograph filtering utilizing Fourier space information) package (Ok)
+# /scipion/scipion3 installp -p scipion-em-miffi -j 12
+
+# ModelAngelo package (Ok)
+# /scipion/scipion3 installp -p scipion-em-modelangelo -j 12
+
+# motioncor3 package (Ok)
+# /scipion/scipion3 installp -p scipion-em-motioncorr -j 12
+
+# PySeg package (Ok)
+# /scipion/scipion3 installp -p scipion-em-pyseg -j 12
 
 # Relion package (Ok)
-# /scipion/scipion3 installp -p scipion-em-relion
-# /scipion/scipion3 installp -p scipion-em-reliontomo
+# /scipion/scipion3 installp -p scipion-em-relion -j 12
+# /scipion/scipion3 installp -p scipion-em-reliontomo -j 12
+
+# Sphire package (Ok)
+# /scipion/scipion3 installp -p scipion-em-sphire -j 12
+
+# Spider package (Ok)
+# /scipion/scipion3 installp -p scipion-em-spider -j 12
+
+# Tomography package (Ok)
+# /scipion/scipion3 installp -p scipion-em-tomo -j 12
+
+# Tomo3DEM package (Ok)
+# /scipion/scipion3 installp -p scipion-em-tomo3d -j 12
+
+# TomoSegMemTV package (Ok)
+# /scipion/scipion3 installp -p scipion-em-tomosegmemtv -j 12
+
+# TomoTwin package (Ok)
+# /scipion/scipion3 installp -p scipion-em-tomotwin -j 12
+
+# Tomography 3D visualization package (Ok)
+# /scipion/scipion3 installp -p scipion-em-tomoviz -j 12
+
+# Warp package (Ok)
+# /scipion/scipion3 installp -p scipion-em-warp
+
+# Xmipp tomography package (Ok)
+# /scipion/scipion3 installp -p scipion-em-xmipptomo -j 12
+
+# Set hosts.conf file
+# This file is used to configure the hosts for Scipion.
+# It should be placed in the /scipion/config/ directory.
+cat /scipion/config/hosts.conf
 
 # Cleaning tasks for space optimisation
 apt clean
 apt autoclean
 apt autoremove
 rm -rf /var/lib/apt/lists/*
+rm -f /scipion/software/em/*.*gz
+rm -f /scipion/software/em/*.tar
 unset DEBIAN_FRONTEND
+
+%test
+/scipion/scipion3 tests --grep dynamo --run
 
 %runscript
