@@ -76,6 +76,9 @@ echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> /scipion/config/scipion.conf
 # Gautomatch picker package (Ok)
 /scipion/scipion3 installp -p scipion-em-gautomatch -j 48
 
+# Gctf package (Ok)
+/scipion/scipion3 installp -p scipion-em-gctf -j 48
+
 # IMOD package (ERROR)
 # /scipion/scipion3 installp -p scipion-em-imod -j 48
 
