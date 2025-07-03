@@ -15,8 +15,7 @@
 # You can build multiple containers by adding them separated by a space
 # For example, CONTAINER_FLAVOURS="base spa"
 # Remember that you will need base for any container
-# CONTAINER_FLAVOURS="base"
-CONTAINER_FLAVOURS="full"
+CONTAINER_FLAVOURS="base full"
 
 ### CLUSTER SPECIFIC
 # You can add your cluster-specific commands here
