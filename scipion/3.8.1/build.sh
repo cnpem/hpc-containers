@@ -47,6 +47,5 @@ for F in $CONTAINER_FLAVOURS; do
     echo "Result will be in ./$TARGET.sif"
     APPTAINERENV_DISPLAY=$DISPLAY $CONTAINER_CMD build --nv --force ./$TARGET.sif ./apptainer/$TARGET.def
 done
-done
 
 echo "Finished."
