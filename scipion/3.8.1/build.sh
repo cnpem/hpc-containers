@@ -32,11 +32,22 @@ $CLUSTER_PREP
 echo "Preparing to build Scipion Apptainer image locally..."
 echo "System will build $CONTAINER_FLAVOURS"
 
+# Check if apptainer or singularity is available
+if command -v apptainer &> /dev/null; then
+    CONTAINER_CMD="apptainer"
+elif command -v singularity &> /dev/null; then
+    CONTAINER_CMD="singularity"
+else
+    echo "Error: Neither apptainer nor singularity is installed."
+    exit 1
+fi
+
 for F in $CONTAINER_FLAVOURS; do
     TARGET="scipion-$F"
     echo "Compiling $TARGET image..."
     echo "Result will be in ./$TARGET.sif"
-    APPTAINERENV_DISPLAY=$DISPLAY apptainer build --nv --force ./$TARGET.sif ./apptainer/$TARGET.def
+    APPTAINERENV_DISPLAY=$DISPLAY $CONTAINER_CMD build --nv --force ./$TARGET.sif ./apptainer/$TARGET.def
+done
 done
 
 echo "Finished."
