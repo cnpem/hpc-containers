@@ -12,6 +12,7 @@ Tomography and SPA packages add-on for Apptainer/Singularity base image
 
 %files
 apptainer/hosts.conf /scipion/config/hosts.conf
+launcher.sh /opt/launcher.sh
 
 %post
 # Export tz for apt so it does not block on install
@@ -163,3 +164,4 @@ unset DEBIAN_FRONTEND
 %test
 
 %runscript
+exec '@'
