@@ -20,7 +20,7 @@ Usage
 After loading this module, you can run Scipion using the 'scipion' alias
 
 # To start the graphical user interface (GUI):
-$ scipion
+$ scipion3
 
 # Run Relion, cisTEM, Phenix, and IsoNet from a GPU-enabled Apptainer/Singularity container.
 $ relion
@@ -49,6 +49,17 @@ setenv("SCIPSLURM_BIN", "/usr/bin")
 setenv("SCIPSLURM_BASE", "/etc/slurm")
 setenv("SCIPSLURM_LIB", "/usr/lib64/slurm")
 setenv("SCIPSLURM_PLUGINS", "/usr/lib64/slurm")
+
+-- MUNGE and library binds for SLURM
+setenv("SCIPSLURM_EXTRA_BINDS", table.concat({
+    "--bind /etc/munge:/etc/munge:ro",
+    "--bind /usr/lib64/libreadline.so.7:/usr/lib64/libreadline.so.7:ro",
+    "--bind /usr/lib64/libhistory.so.7:/usr/lib64/libhistory.so.7:ro",
+    "--bind /usr/lib64/libtinfo.so.6:/usr/lib64/libtinfo.so.6:ro",
+    "--bind /var/run/munge:/var/run/munge:ro",
+    "--bind /usr/lib64/libmunge.so.2.0.0:/usr/lib64/libmunge.so.2.0.0:ro",
+    "--bind /run/munge:/run/munge:ro"
+}, " "))
 
 -- MPI
 setenv("SCIPMPI_LIB", "/opt/images/openmpi/4.1.4")
@@ -81,7 +92,6 @@ local bind_opts = table.concat({
     "--bind " .. os.getenv("SCIPSLURM_BASE"),
     "--bind " .. os.getenv("SCIPSLURM_LIB"),
     "--bind " .. os.getenv("SCIPMPI_LIB"),
-
 }, " ")
 
 -- Build command using SCIPION_CONTAINER_CMD
