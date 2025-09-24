@@ -398,33 +398,29 @@ scipion3 installb --help
 # List packages
 scipion3 installp --help
 
+# Clean up conda and apt cache
 conda clean --tarballs -y
-rm -f ${SCIPION_HOME}/software/em/*.*gz && rm -f ${SCIPION_HOME}/software/em/*.tar
+rm -f ${SCIPION_HOME}/software/em/*.*gz
+rm -f ${SCIPION_HOME}/software/em/*.tar
 apt clean
 rm -rf /var/lib/apt/lists/*
 
+# Update Scipion configuration
 /opt/scipion/scipion3 config --update
 
-#move host.conf imported file to correct place
+# Move host.conf to the correct location
 mv /opt/hosts.conf /opt/scipion/config/hosts.conf
 
-chmod 755 -R /opt
-chmod 755 /opt
+# Set permissions
+chmod -R 755 /opt
 chmod 755 /opt/etc
 chmod 644 /opt/etc/bashrc
 chown root:root /opt/etc/bashrc
+
 chmod -R 755 /opt/scipion/software/em/phenix-1.21.2-5419
 chmod 755 /opt/scipion
 chmod 755 /opt/scipion/config
 chmod 644 /opt/scipion/config/*.conf
-
-%test
-    grep -q NAME=\"Ubuntu\" /etc/os-release
-    if [ $? -eq 0 ]; then
-        echo "Container base is Ubuntu as expected."
-    else
-        echo "Container base is not Ubuntu."
-    fi
 
 %runscript
 #!/bin/bash
@@ -432,21 +428,18 @@ source /opt/etc/bashrc || true
 exec "$@"
 
 %appenv scipion
-
 %apprun scipion
 #!/bin/bash
 source /opt/etc/bashrc || true
 exec /opt/scipion/scipion3 "$@"
 
 %appenv relion
-
 %apprun relion
 #!/bin/bash
 source /opt/etc/bashrc || true
 exec relion "$@"
 
 %appenv phenix
-
 %apprun phenix
 #!/bin/bash
 source /opt/etc/bashrc || true
@@ -457,17 +450,32 @@ source /opt/scipion/software/em/phenix-1.21.2-5419/phenix_env.sh
 exec phenix "$@"
 
 %appenv cistem
-
 %apprun cistem
 #!/bin/bash
 source /opt/etc/bashrc || true
 exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
 
 %appenv isonet
-
 %apprun isonet
 #!/bin/bash
 source /opt/scipion/software/conda/etc/profile.d/conda.sh || true
 source /opt/etc/bashrc || true
 conda activate isonet-0.2.1
 exec "$@"
+
+%test
+grep -q 'NAME="Ubuntu"' /etc/os-release
+if [ $? -eq 0 ]; then
+    echo "Container base is Ubuntu as expected."
+else
+    echo "Container base is not Ubuntu."
+fi
+
+%test
+echo "=== Testing apps inside container ==="
+/opt/scipion/scipion3 --version || echo "Scipion failed"
+relion --version || echo "Relion failed"
+/opt/scipion/software/em/cistem-1.0.0-beta/cisTEM --version || echo "cisTEM failed"
+phenix.version || echo "Phenix failed"
+bash -c "source /opt/scipion/software/conda/etc/profile.d/conda.sh && conda activate isonet-0.2.1 && echo 'IsoNet environment ok'" || echo "IsoNet failed"
+echo "=== Test complete ==="
