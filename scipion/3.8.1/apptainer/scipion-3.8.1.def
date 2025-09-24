@@ -410,6 +410,8 @@ chmod 755 -R /opt
 chmod 755 /opt
 chmod 755 /opt/etc
 chmod 644 /opt/etc/bashrc
+chown root:root /opt/etc/bashrc
+chmod -R 755 /opt/scipion/software/em/phenix-1.21.2-5419
 chmod 755 /opt/scipion
 chmod 755 /opt/scipion/config
 chmod 644 /opt/scipion/config/*.conf
@@ -431,8 +433,8 @@ exec "$@"
 
 %apprun scipion
 #!/bin/bash
-source /opt/etc/bashrc
-exec scipion3 "$@"
+source /opt/etc/bashrc || true
+exec /opt/scipion/scipion3 "$@"
 
 %appenv relion
 
@@ -447,6 +449,8 @@ exec relion "$@"
 #!/bin/bash
 source /opt/etc/bashrc
 export LIBGL_ALWAYS_INDIRECT=0
+export DISPLAY=""
+export QT_QPA_PLATFORM=offscreen
 source /opt/scipion/software/em/phenix-1.21.2-5419/phenix_env.sh
 exec phenix "$@"
 
