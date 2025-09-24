@@ -328,28 +328,28 @@ scipion3 installp -p scipion-em-xmipptomo -j $NPROC
 scipion3 installp -p scipion-em-warp
 
 # PySeg package 
-scipion3 installp -p scipion-em-pyseg -j 48
+scipion3 installp -p scipion-em-pyseg -j $NPROC
 
 # EmanTomo package 
-scipion3 installp -p scipion-em-emantomo -j 48
+scipion3 installp -p scipion-em-emantomo -j $NPROC
 
 # ModelAngelo package 
-scipion3 installp -p scipion-em-modelangelo -j 48
+scipion3 installp -p scipion-em-modelangelo -j $NPROC
 
 # TomoSegMemTV package 
-scipion3 installp -p scipion-em-tomosegmemtv -j 48
+scipion3 installp -p scipion-em-tomosegmemtv -j $NPROC
 
 # DeepFinder package 
-scipion3 installp -p scipion-em-deepfinder -j 48
+scipion3 installp -p scipion-em-deepfinder -j $NPROC
 
 # Cryocare package 
-scipion3 installp -p scipion-em-cryocare -j 48
+scipion3 installp -p scipion-em-cryocare -j $NPROC
 
 # TomoTwin package 
-scipion3 installp -p scipion-em-tomotwin -j 48
+scipion3 installp -p scipion-em-tomotwin -j $NPROC
 
 # Fidder package 
-scipion3 installp -p scipion-em-fidder -j 48
+scipion3 installp -p scipion-em-fidder -j $NPROC
 
 # cryodrgn package
 scipion3 installp -p scipion-em-cryodrgn -j $NPROC
@@ -358,10 +358,11 @@ scipion3 installp -p scipion-em-cryodrgn -j $NPROC
 scipion3 installp -p scipion-em-resmap -j $NPROC
 
 # IsoNet package
-scipion3 installp -p scipion-em-isonet -j 48
+scipion3 installp -p scipion-em-isonet -j $NPROC
 echo "" >> ~/.bashrc
 echo "export PYTHONPATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH" >> ~/.bashrc
 echo "export PATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> ~/.bashrc
+echo "export ISONET_ACTIVATION_CMD=conda activate isonet-0.2.1" >> ~/.bashrc
 
 # MemBrain package
 # NOTE: The MemBrain package does not have an official production release.
@@ -458,8 +459,8 @@ exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
 %appenv isonet
 %apprun isonet
 #!/bin/bash
-source /opt/scipion/software/conda/etc/profile.d/conda.sh || true
 source /opt/etc/bashrc || true
+source /opt/miniconda3/etc/profile.d/conda.sh || true
 conda activate isonet-0.2.1
 exec "$@"
 
