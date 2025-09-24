@@ -78,10 +78,12 @@ eval "$(/opt/miniconda3/bin/conda shell.bash hook)"
 mkdir /opt/etc
 
 # put conda activation on bashrc to make it easier for the user
-echo "#! /bin/bash" > /opt/etc/bashrc
-echo "source /opt/miniconda3/etc/profile.d/conda.sh" >> /opt/etc/bashrc
-echo "export TORCH_HOME=${TORCH_HOME}" >> /opt/etc/bashrc
-echo "export SCIPION_HOME=${SCIPION_HOME}" >> /opt/etc/bashrc
+cat<<EOF > /opt/etc/bashrc
+#! /bin/bash
+source /opt/miniconda3/etc/profile.d/conda.sh
+export TORCH_HOME=${TORCH_HOME}
+export SCIPION_HOME=${SCIPION_HOME}
+EOF
 
 # this seems to be required by newer versions of conda as of July 2025
 conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
@@ -426,7 +428,7 @@ chmod 644 /opt/scipion/config/*.conf
 
 %runscript
 #!/bin/bash
-source /opt/etc/bashrc
+source /opt/etc/bashrc || true
 exec "$@"
 
 %appenv scipion
@@ -440,14 +442,14 @@ exec /opt/scipion/scipion3 "$@"
 
 %apprun relion
 #!/bin/bash
-source /opt/etc/bashrc
+source /opt/etc/bashrc || true
 exec relion "$@"
 
 %appenv phenix
 
 %apprun phenix
 #!/bin/bash
-source /opt/etc/bashrc
+source /opt/etc/bashrc || true
 export LIBGL_ALWAYS_INDIRECT=0
 export DISPLAY=""
 export QT_QPA_PLATFORM=offscreen
@@ -458,13 +460,14 @@ exec phenix "$@"
 
 %apprun cistem
 #!/bin/bash
-source /opt/etc/bashrc
+source /opt/etc/bashrc || true
 exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
 
 %appenv isonet
 
 %apprun isonet
 #!/bin/bash
-source /opt/etc/bashrc
+source /opt/scipion/software/conda/etc/profile.d/conda.sh || true
+source /opt/etc/bashrc || true
 conda activate isonet-0.2.1
 exec "$@"
