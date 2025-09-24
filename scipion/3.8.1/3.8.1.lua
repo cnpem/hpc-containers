@@ -100,7 +100,7 @@ local bind_opts = table.concat({
 local container_cmd = os.getenv("SCIPION_CONTAINER_CMD") .. " run " .. bind_opts .. " "
 
 -- Aliases for applications
-set_alias("scipion3", container_cmd .. "--app scipion3 " .. container_path)
+set_alias("scipion", container_cmd .. "--app scipion " .. container_path)
 set_alias("relion",   container_cmd .. "--app relion "   .. container_path)
 set_alias("cistem",   container_cmd .. "--app cistem "   .. container_path)
 set_alias("phenix",   container_cmd .. "--app phenix "   .. container_path)
