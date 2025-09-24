@@ -40,8 +40,8 @@ setenv("SCIPION3_CONTAINER", container_path)
 
 -- User data directories
 local home = os.getenv("HOME")
-execute("mkdir -p " .. pathJoin(home, "ScipionUserData/data"))
-execute("mkdir -p " .. pathJoin(home, "ScipionUserData/logs"))
+execute{cmd = "mkdir -p " .. pathJoin(home, "ScipionUserData/data"), modeA={"load"}}
+execute{cmd = "mkdir -p " .. pathJoin(home, "ScipionUserData/logs"), modeA={"load"}}
 setenv("SCIPION_PROJDIR", pathJoin(home, "ScipionUserData"))
 setenv("SCIPION_DATADIR", pathJoin(home, "ScipionUserData/data"))
 setenv("SCIPION_LOGDIR", pathJoin(home, "ScipionUserData/logs"))
@@ -72,7 +72,7 @@ setenv("SCIPION_CONTAINER_CMD", "singularity")
 -- Convenience aliases (with GUI binds)
 local user = os.getenv("USER")
 local bind_opts = table.concat({
-    "--nv --containall",
+    "--nv",
     "--env DISPLAY=" .. os.getenv("DISPLAY"),
     "--env SCIPION_USER_DATA=" .. pathJoin(home, "ScipionUserData"),
     "--bind /run",
