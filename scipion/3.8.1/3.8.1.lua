@@ -40,6 +40,8 @@ setenv("SCIPION3_CONTAINER", container_path)
 
 -- User data directories
 local home = os.getenv("HOME")
+execute("mkdir -p " .. pathJoin(home, "ScipionUserData/data"))
+execute("mkdir -p " .. pathJoin(home, "ScipionUserData/logs"))
 setenv("SCIPION_PROJDIR", pathJoin(home, "ScipionUserData"))
 setenv("SCIPION_DATADIR", pathJoin(home, "ScipionUserData/data"))
 setenv("SCIPION_LOGDIR", pathJoin(home, "ScipionUserData/logs"))
@@ -71,7 +73,7 @@ setenv("SCIPION_CONTAINER_CMD", "singularity")
 local user = os.getenv("USER")
 local bind_opts = table.concat({
     "--nv --containall",
-    "--env DISPLAY=$DISPLAY",
+    "--env DISPLAY=" .. os.getenv("DISPLAY"),
     "--env SCIPION_USER_DATA=" .. pathJoin(home, "ScipionUserData"),
     "--bind /run",
     "--bind /tmp",
@@ -95,7 +97,7 @@ local bind_opts = table.concat({
 }, " ")
 
 -- Build command using SCIPION_CONTAINER_CMD
-local container_cmd = "$SCIPION_CONTAINER_CMD run " .. bind_opts .. " "
+local container_cmd = os.getenv("SCIPION_CONTAINER_CMD") .. " run " .. bind_opts .. " "
 
 -- Aliases for applications
 set_alias("scipion3", container_cmd .. "--app scipion3 " .. container_path)
