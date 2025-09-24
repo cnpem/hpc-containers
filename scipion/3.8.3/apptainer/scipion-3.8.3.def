@@ -50,13 +50,16 @@ ls /opt
 # Install dependencies
 apt update
 apt install -y software-properties-common lsb-release build-essential
-apt install -y gcc-10 g++-10 libopenmpi-dev make git wget unzip libfftw3-dev libopenmpi-dev libhdf5-dev libtiff5-dev libsqlite3-dev default-jdk libjpeg-dev libgsl-dev bison flex gedit
+apt install -y gcc-10 g++-10 libopenmpi-dev make git wget unzip libfftw3-dev libhdf5-dev libtiff5-dev libsqlite3-dev default-jdk libjpeg-dev libgsl-dev bison flex gedit
 
-# install relion dependencies
+# Relion dependencies
 apt install -y mpi-default-bin mpi-default-dev libfftw3-dev libtiff-dev libpng-dev ghostscript libxft-dev libcanberra-gtk-module libcanberra-gtk3-module packagekit-gtk3-module
 
+# ChimeraX libraries
+apt-get install -y xcb libffi-dev libxcb1-dev libxkbfile-dev qtbase5-dev libglu1-mesa
+
 # install some other plugins dependencies
-apt install -y python3-pyqt5 libxcb-xinerama0 libxcb-image0 libglu1-mesa libgl1-mesa-dev libxkbcommon-x11-dev
+apt install -y python3-pyqt5 libxcb-xinerama0 libxcb-image0 libgl1-mesa-dev libxkbcommon-x11-dev
 
 # Slurm libraries
 apt install -y --no-install-recommends --no-install-suggests libmunge-dev libmunge2 munge
