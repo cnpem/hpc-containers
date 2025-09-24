@@ -1,8 +1,8 @@
--- Lmod module file for Scipion 3.8.1
+-- Lmod module file for Scipion 3.8.3
 
 -- whatis() is displayed when a user runs "module spider" or "module whatis"
 whatis("Name: Scipion")
-whatis("Version: 3.8.1")
+whatis("Version: 3.8.3")
 whatis("Category: bio, cryo-em, cryo-tomo")
 whatis("Description: Scipion is a software framework to integrate several software packages under a single interface.")
 whatis("URL: https://scipion.i2pc.es/")
@@ -13,7 +13,7 @@ Description
 -----------
 Scipion is a software framework to integrate several software packages under a single interface. It provides a workflow to manage, execute and monitor the image processing steps needed to obtain 3D cryo-EM maps from raw images.
 
-This module provides Scipion version 3.8.1, executed via a Singularity container. It enables GPU support via the '--nv' flag.
+This module provides Scipion version 3.8.3, executed via a Singularity container. It enables GPU support via the '--nv' flag.
 
 Usage
 -----
@@ -35,7 +35,7 @@ https://scipion.i2pc.es/
 ]])
 
 -- Container location
-local container_path = "/opt/images/apps/scipion/3.8.1/scipion-3.8.1.sif"
+local container_path = "/opt/images/apps/scipion/3.8.3/scipion-3.8.3.sif"
 setenv("SCIPION3_CONTAINER", container_path)
 
 -- User data directories
