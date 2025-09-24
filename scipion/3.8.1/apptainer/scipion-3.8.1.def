@@ -17,7 +17,7 @@ extras/cryoassess-models /opt
 extras/ChimeraX-1.6.1.tar.gz /opt
 extras/phenix-installer-1.21.2-5419-intel-linux-2.6-x86_64-centos6.tar.gz /opt
 extras/relion-5.0-slurm_template.sh /opt
-# extras/default_run_profiles.txt /opt
+extras/default_run_profiles.txt /opt
 
 %environment
 export PATH=/opt/scipion/:$PATH
@@ -138,7 +138,6 @@ ln -s /usr/lib/x86_64-linux-gnu/libffi.so.7 /usr/lib/x86_64-linux-gnu/libffi.so.
 
 # Relion package
 # create dirs and move files around
-# TODO: Add relion_torch_models.tar.gz to extras
 # mkdir -p ${TORCH_HOME}/hub/checkpoints
 # mv /opt/relion_torch_models/* ${TORCH_HOME}/hub/checkpoints/.
 # rm -r /opt/relion_torch_models
@@ -187,7 +186,7 @@ RELION_QSUB_EXTRA3_HELP="SLURM job time limit in format HH:MM:SS or DAYS-HH:MM:S
 RELION_QUEUE_USE="yes"
 RELION_QSUB_COMMAND="sbatch"
 RELION_SHELL="bash"
-RELION_QUEUE_NAME="cryo"
+RELION_QUEUE_NAME="long-gpu-big"
 EOF
 
 # link relion and scipion
@@ -265,8 +264,7 @@ scipion3 installp -p scipion-em-empiar -j $NPROC
 
 # CisTEM package
 scipion3 installp -p scipion-em-cistem -j $NPROC
-# TODO: Add default_run_profiles.txt to extras
-# mv /opt/default_run_profiles.txt ${SCIPION_HOME}/software/em/cistem-1.0.0-beta/default_run_profiles.txt
+mv /opt/default_run_profiles.txt ${SCIPION_HOME}/software/em/cistem-1.0.0-beta/default_run_profiles.txt
 echo "alias cisTEM=\"${SCIPION_HOME}/software/em/cistem-1.0.0-beta/cisTEM\"" >> /opt/etc/bashrc
 
 # Flexutils package
