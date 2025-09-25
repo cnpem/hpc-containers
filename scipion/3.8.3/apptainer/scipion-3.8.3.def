@@ -82,7 +82,7 @@ mkdir /opt/etc
 
 # put conda activation on bashrc to make it easier for the user
 cat<<EOF > /opt/etc/bashrc
-#! /bin/bash
+#!/bin/bash
 source /opt/miniconda3/etc/profile.d/conda.sh
 export TORCH_HOME=${TORCH_HOME}
 export SCIPION_HOME=${SCIPION_HOME}
@@ -428,25 +428,25 @@ chmod 644 /opt/scipion/config/*.conf
 
 %runscript
 #!/bin/bash
-source /opt/etc/bashrc || true
+source /opt/etc/bashrc
 exec "$@"
 
 %appenv scipion
 %apprun scipion
 #!/bin/bash
-source /opt/etc/bashrc || true
+source /opt/etc/bashrc
 exec /opt/scipion/scipion3 "$@"
 
 %appenv relion
 %apprun relion
 #!/bin/bash
-source /opt/etc/bashrc || true
+source /opt/etc/bashrc
 exec relion "$@"
 
 %appenv phenix
 %apprun phenix
 #!/bin/bash
-source /opt/etc/bashrc || true
+source /opt/etc/bashrc
 export LIBGL_ALWAYS_INDIRECT=0
 export DISPLAY=""
 export QT_QPA_PLATFORM=offscreen
@@ -456,14 +456,14 @@ exec phenix "$@"
 %appenv cistem
 %apprun cistem
 #!/bin/bash
-source /opt/etc/bashrc || true
+source /opt/etc/bashrc
 exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
 
 %appenv isonet
 %apprun isonet
 #!/bin/bash
-source /opt/etc/bashrc || true
-source /opt/miniconda3/etc/profile.d/conda.sh || true
+source /opt/etc/bashrc
+source /opt/miniconda3/etc/profile.d/conda.sh
 conda activate isonet-0.2.1
 exec "$@"
 
