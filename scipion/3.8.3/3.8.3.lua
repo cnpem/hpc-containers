@@ -107,5 +107,5 @@ set_alias("phenix",   container_cmd .. "--app phenix "   .. container_path)
 set_alias("isonet",   container_cmd .. "--app isonet "   .. container_path)
 
 -- Display
-local PREPARE_SCREEN = "xhost +"
+local PREPARE_SCREEN = "xhost + > /dev/null 2>&1"
 execute{cmd = PREPARE_SCREEN, modeA={"load"}}
