@@ -73,7 +73,7 @@ setenv("SCIPION_CONTAINER_CMD", "singularity")
 local user = os.getenv("USER")
 local bind_opts = table.concat({
     "--nv",
-    "--env DISPLAY=" .. os.getenv("DISPLAY"),
+    "--env DISPLAY=" .. (os.getenv("DISPLAY") or ""),
     "--env SCIPION_USER_DATA=" .. pathJoin(home, "ScipionUserData"),
     "--bind /run",
     "--bind /tmp",
@@ -105,3 +105,7 @@ set_alias("relion",   container_cmd .. "--app relion "   .. container_path)
 set_alias("cistem",   container_cmd .. "--app cistem "   .. container_path)
 set_alias("phenix",   container_cmd .. "--app phenix "   .. container_path)
 set_alias("isonet",   container_cmd .. "--app isonet "   .. container_path)
+
+-- Display
+local PREPARE_SCREEN = "xhost +"
+execute{cmd = PREPARE_SCREEN, modeA={"load"}}
