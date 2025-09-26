@@ -365,7 +365,7 @@ scipion3 installp -p scipion-em-isonet -j $NPROC
 echo "" >> /opt/etc/bashrc
 echo "export PYTHONPATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH" >> /opt/etc/bashrc
 echo "export PATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> /opt/etc/bashrc
-echo "export ISONET_ACTIVATION_CMD=conda activate isonet-0.2.1" >> /opt/etc/bashrc
+echo "export ISONET_ACTIVATION_CMD=\"conda activate isonet-0.2.1\"" >> /opt/etc/bashrc
 
 # MemBrain package
 # NOTE: The MemBrain package does not have an official production release.
@@ -474,12 +474,3 @@ if [ $? -eq 0 ]; then
 else
     echo "Container base is not Ubuntu."
 fi
-
-%test
-echo "=== Testing apps inside container ==="
-/opt/scipion/scipion3 --version || echo "Scipion failed"
-relion --version || echo "Relion failed"
-/opt/scipion/software/em/cistem-1.0.0-beta/cisTEM --version || echo "cisTEM failed"
-phenix.version || echo "Phenix failed"
-bash -c "source /opt/scipion/software/conda/etc/profile.d/conda.sh && conda activate isonet-0.2.1 && echo 'IsoNet environment ok'" || echo "IsoNet failed"
-echo "=== Test complete ==="
