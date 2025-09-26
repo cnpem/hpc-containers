@@ -45,8 +45,6 @@ export SCIPION_HOME=/opt/scipion
 export NPROC=94
 # export CRYOSPARC_HOME=/mnt/beegfs_compat/home/cryosparcuser/
 
-ls /opt
-
 # Install dependencies
 apt update
 apt install -y software-properties-common lsb-release build-essential
