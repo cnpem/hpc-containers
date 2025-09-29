@@ -20,13 +20,15 @@ Usage
 After loading this module, you can run Scipion using the 'scipion' alias
 
 # To start the graphical user interface (GUI):
-$ scipion3
+$ scipion
 
 # Run Relion, cisTEM, Phenix, and IsoNet from a GPU-enabled Apptainer/Singularity container.
-$ relion
+$ 3dmod
 $ cistem
-$ phenix
+$ etomo
 $ isonet
+$ phenix
+$ relion
 
 More Information
 ----------------
@@ -100,11 +102,13 @@ local bind_opts = table.concat({
 local container_cmd = os.getenv("SCIPION_CONTAINER_CMD") .. " run " .. bind_opts .. " "
 
 -- Aliases for applications
-set_alias("scipion", container_cmd .. "--app scipion " .. container_path)
-set_alias("relion",   container_cmd .. "--app relion "   .. container_path)
+set_alias("3dmod",    container_cmd .. "--app 3dmod "    .. container_path)
 set_alias("cistem",   container_cmd .. "--app cistem "   .. container_path)
-set_alias("phenix",   container_cmd .. "--app phenix "   .. container_path)
+set_alias("etomo",    container_cmd .. "--app etomo "    .. container_path)
 set_alias("isonet",   container_cmd .. "--app isonet "   .. container_path)
+set_alias("phenix",   container_cmd .. "--app phenix "   .. container_path)
+set_alias("relion",   container_cmd .. "--app relion "   .. container_path)
+set_alias("scipion",  container_cmd .. "--app scipion "  .. container_path)
 
 -- Display
 local PREPARE_SCREEN = "xhost + > /dev/null 2>&1"

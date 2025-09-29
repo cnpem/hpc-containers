@@ -206,6 +206,10 @@ scipion3 installp -p scipion-em-motioncorr -j $NPROC
 
 # IMOD package
 scipion3 installp -p scipion-em-imod -j $NPROC
+cat<<EOF >> /opt/etc/bashrc
+export IMOD_DIR=${SCIPION_HOME}/software/em/imod-4.11.25/IMOD
+source ${SCIPION_HOME}/software/em/imod-4.11.25/IMOD/IMOD-linux.sh
+EOF
 
 # Sphire package
 scipion3 installp -p scipion-em-sphire -j $NPROC
@@ -413,6 +417,11 @@ rm -rf /var/lib/apt/lists/*
 # Move host.conf to the correct location
 mv /opt/hosts.conf /opt/scipion/config/hosts.conf
 
+# Copy /opt/etc/bashrc to $SINGULARITY_ENVIRONMENT
+echo "" >> $SINGULARITY_ENVIRONMENT
+cat /opt/etc/bashrc >> $SINGULARITY_ENVIRONMENT
+echo "" >> $SINGULARITY_ENVIRONMENT
+
 # Set permissions
 chmod -R 755 /opt
 chmod 755 /opt/etc
@@ -425,45 +434,50 @@ chmod 755 /opt/scipion/config
 chmod 644 /opt/scipion/config/*.conf
 
 %runscript
-#!/bin/bash
-source /opt/etc/bashrc
-exec "$@"
+    #!/bin/bash
+    source /opt/etc/bashrc
+    exec "$@"
 
 %appenv scipion
+    source /opt/etc/bashrc
 %apprun scipion
-#!/bin/bash
-source /opt/etc/bashrc
-exec /opt/scipion/scipion3 "$@"
+    exec /opt/scipion/scipion3 "$@"
 
 %appenv relion
+    source /opt/etc/bashrc
 %apprun relion
-#!/bin/bash
-source /opt/etc/bashrc
-exec relion "$@"
+    exec relion "$@"
 
 %appenv phenix
+    source /opt/etc/bashrc
+    source /opt/scipion/software/em/phenix-1.21.2-5419/phenix_env.sh
+    export LIBGL_ALWAYS_INDIRECT=0
+    export DISPLAY=""
+    export QT_QPA_PLATFORM=offscreen
 %apprun phenix
-#!/bin/bash
-source /opt/etc/bashrc
-export LIBGL_ALWAYS_INDIRECT=0
-export DISPLAY=""
-export QT_QPA_PLATFORM=offscreen
-source /opt/scipion/software/em/phenix-1.21.2-5419/phenix_env.sh
-exec phenix "$@"
+    exec phenix "$@"
 
 %appenv cistem
+    source /opt/etc/bashrc
 %apprun cistem
-#!/bin/bash
-source /opt/etc/bashrc
-exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
+    exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
 
 %appenv isonet
+    source /opt/etc/bashrc
+    source /opt/miniconda3/etc/profile.d/conda.sh
+    conda activate isonet-0.2.1
 %apprun isonet
-#!/bin/bash
-source /opt/etc/bashrc
-source /opt/miniconda3/etc/profile.d/conda.sh
-conda activate isonet-0.2.1
-exec "$@"
+    exec isonet.py "$@"
+
+%appenv 3dmod
+    source /opt/etc/bashrc
+%apprun 3dmod
+    exec ${IMOD_DIR}/bin/3dmod "$@"
+
+%appenv etomo
+    source /opt/etc/bashrc
+%apprun etomo
+    exec ${IMOD_DIR}/bin/etomo "$@"
 
 %test
 grep -q 'NAME="Ubuntu"' /etc/os-release
