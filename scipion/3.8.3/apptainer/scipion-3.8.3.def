@@ -1,0 +1,493 @@
+Bootstrap: docker
+From: nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+
+%labels
+MAINTAINER bruno.focassio@lnnano.cnpem.br
+MAINTAINER joao.guerra@lnbio.cnpem.br
+MAINTAINER jose.pereira@lnbio.cnpem.br
+VERSION 3.8.3
+
+%help
+Recipe for Scipion on Apptainer/Singularity image generation.
+
+%files
+apptainer/hosts.conf /opt
+extras/cryoassess-models /opt
+# extras/relion_torch_models /opt
+extras/ChimeraX-1.6.1.tar.gz /opt
+extras/phenix-installer-1.21.2-5419-intel-linux-2.6-x86_64-centos6.tar.gz /opt
+extras/relion-5.0-slurm_template.sh /opt
+extras/default_run_profiles.txt /opt
+
+%environment
+export PATH=/opt/scipion/:$PATH
+export PATH=/root/.local/bin/:$PATH
+export BASH_ENV=/opt/etc/bashrc
+export PATH=/opt/miniconda3/condabin:$PATH
+export PATH=/opt/miniconda3/bin:$PATH
+export PATH=/opt/scipion/software/em/relion-5.0/bin/:$PATH
+export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin/:$PATH
+export PYTHONPATH=/opt/scipion/software/em/isonet-0.2.1:$PYTHONPATH
+export PHENIX=/opt/scipion/software/em/phenix-1.21.2-5419
+export SCIPION_HOME=/opt/scipion
+export CUDA_ROOT=/usr/local/cuda-11.8
+export TORCH_HOME=/opt/torch
+
+%post
+export TZ='America/Sao_Paulo'
+export DEBIAN_FRONTEND=noninteractive
+export CUDA_COMPUTE_CAP=89
+export TORCH_HOME=/opt/torch
+export MINICONDA_VERSION="latest"
+export CUDA_ROOT=/usr/local/cuda-11.8
+export MPI_ROOT=/usr
+export SCIPION_HOME=/opt/scipion
+export NPROC=94
+# export CRYOSPARC_HOME=/mnt/beegfs_compat/home/cryosparcuser/
+
+# Install dependencies
+apt update
+apt install -y software-properties-common lsb-release build-essential
+apt install -y gcc-10 g++-10 libopenmpi-dev make git wget unzip libfftw3-dev libhdf5-dev libtiff5-dev libsqlite3-dev default-jdk libjpeg-dev libgsl-dev bison flex gedit
+
+# Relion dependencies
+apt install -y mpi-default-bin mpi-default-dev libfftw3-dev libtiff-dev libpng-dev ghostscript libxft-dev libcanberra-gtk-module libcanberra-gtk3-module packagekit-gtk3-module
+
+# ChimeraX libraries
+apt-get install -y xcb libffi-dev libxcb1-dev libxkbfile-dev qtbase5-dev libglu1-mesa
+
+# install some other plugins dependencies
+apt install -y python3-pyqt5 libxcb-xinerama0 libxcb-image0 libgl1-mesa-dev libxkbcommon-x11-dev
+
+# Slurm libraries
+apt install -y --no-install-recommends --no-install-suggests libmunge-dev libmunge2 munge
+adduser slurm --uid 202 --no-create-home --disabled-password --gecos "SLURM resource manager"
+
+# set up locales for phenix
+apt install -y locales
+locale-gen en_US.utf8 en_GB.utf8
+
+# Miniforge installation
+wget https://repo.anaconda.com/miniconda/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -P /opt
+bash /opt/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh -b -p /opt/miniconda3
+rm /opt/Miniconda3-${MINICONDA_VERSION}-Linux-x86_64.sh
+
+# activate shell based environment
+eval "$(/opt/miniconda3/bin/conda shell.bash hook)"
+
+# create dir for custom bashrc file
+mkdir /opt/etc
+
+# put conda activation on bashrc to make it easier for the user
+cat<<EOF > /opt/etc/bashrc
+#!/bin/bash
+source /opt/miniconda3/etc/profile.d/conda.sh
+export TORCH_HOME=${TORCH_HOME}
+export SCIPION_HOME=${SCIPION_HOME}
+EOF
+
+# this seems to be required by newer versions of conda as of July 2025
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+# faster solver
+conda install -n base conda-libmamba-solver -y
+conda config --set solver libmamba
+
+# for relion and general compilations
+# this seems to work better than installing through apt
+conda install -y cmake=3.31 libstdcxx-ng -c conda-forge
+
+# create dir for scipion
+mkdir -p ${SCIPION_HOME}
+
+# get scipion3 installer
+pip3 install --user scipion-installer
+
+# install core scipion
+python3 -m scipioninstaller -conda -noXmipp -noAsk ${SCIPION_HOME}
+
+# create scipion.conf file
+${SCIPION_HOME}/scipion3 config --overwrite --unattended
+
+# create the alias for calling scipion3
+alias scipion3="${SCIPION_HOME}/scipion3"
+echo "alias scipion3=\"${SCIPION_HOME}/scipion3\"" >> /opt/etc/bashrc
+
+# change scipion.conf to correct paths
+# watchout for the space on the first line
+cat<<EOF >> ${SCIPION_HOME}/config/scipion.conf
+ 
+CUDA=True
+CUDA_BIN=${CUDA_ROOT}/bin
+CUDA_LIB=${CUDA_ROOT}/lib64
+MPI_BINDIR=${MPI_ROOT}/bin
+MPI_LIBDIR=${MPI_ROOT}/lib
+MPI_INCLUDE=${MPI_ROOT}/include
+OPENCV=False
+EOF
+
+# fix GUI fonts
+scipion3 run "conda install -y -c conda-forge tk=*=xft_*"
+
+####### GENERAL PLUGIN INSTALATION ########
+
+# Xmipp package
+scipion3 run "conda install -y cmake=3.31 libstdcxx-ng -c conda-forge"
+scipion3 install -p scipion-em-xmipp 24.12.2 -j $NPROC | tee -a install.log
+
+# this is needed somehow
+ln -s /usr/lib/x86_64-linux-gnu/libffi.so.7 /usr/lib/x86_64-linux-gnu/libffi.so.6
+
+# Relion package
+# create dirs and move files around
+# mkdir -p ${TORCH_HOME}/hub/checkpoints
+# mv /opt/relion_torch_models/* ${TORCH_HOME}/hub/checkpoints/.
+# rm -r /opt/relion_torch_models
+
+# change to dir, git clone and build
+cd ${SCIPION_HOME}/software/em/
+git clone https://github.com/3dem/relion.git
+cd relion/
+git checkout ver5.0
+conda env create -f environment.yml
+mkdir -p build
+cd build/
+cmake -DCUDA_ARCH=$CUDA_COMPUTE_CAP -DTORCH_HOME_PATH=$TORCH_HOME ..
+make -j $NPROC
+cd ${SCIPION_HOME}/software/em/
+ln -s ${SCIPION_HOME}/software/em/relion/build ${SCIPION_HOME}/software/em/relion-5.0
+cd
+
+# create slurm template script for using relion with qsub
+mkdir -p ${SCIPION_HOME}/software/em/relion-5.0/slurm_template/
+mv /opt/relion-5.0-slurm_template.sh ${SCIPION_HOME}/software/em/relion-5.0/slurm_template/.
+
+# create relion alias for the session and to bashrc
+alias relion="/opt/scipion/software/em/relion-5.0/bin/relion"
+echo "" >> /opt/etc/bashrc
+echo "alias relion=\"/opt/scipion/software/em/relion-5.0/bin/relion\"" >> /opt/etc/bashrc
+cat<<EOF >> ${SCIPION_HOME}/config/scipion.conf
+RELION_HOME="${SCIPION_HOME}/software/em/relion-5.0"
+RELIONTOMO_HOME="${SCIPION_HOME}/software/em/relion-5.0"
+EOF
+
+# create env variables for using relion with slurm
+cat<<EOF >> /opt/etc/bashrc
+
+RELION_QSUB_TEMPLATE="${SCIPION_HOME}/software/em/relion-5.0/slurm_template/relion-5.0-slurm_template.sh"
+RELION_QSUB_EXTRA_COUNT="3"
+RELION_QSUB_EXTRA1="GPU resources:"
+RELION_QSUB_EXTRA1_DEFAULT="0"
+RELION_QSUB_EXTRA1_HELP="Number (and optionally type) of GPUs to request for this job"
+RELION_QSUB_EXTRA2="Memory per CPU (MB):"
+RELION_QSUB_EXTRA2_DEFAULT="10000"
+RELION_QSUB_EXTRA2_HELP="Memory used per CPU thread, in MiB. Total memory can be calculated as (number of MPI tasks) * (memory per CPU)."
+RELION_QSUB_EXTRA3="Job Time:"
+RELION_QSUB_EXTRA3_DEFAULT="12:00:00"
+RELION_QSUB_EXTRA3_HELP="SLURM job time limit in format HH:MM:SS or DAYS-HH:MM:SS."
+RELION_QUEUE_USE="yes"
+RELION_QSUB_COMMAND="sbatch"
+RELION_SHELL="bash"
+RELION_QUEUE_NAME="long-gpu-big"
+EOF
+
+# link relion and scipion
+scipion3 run "pip install scipion-em-relion scipion-em-reliontomo"
+
+# ChimeraX package
+mv /opt/ChimeraX-1.6.1.tar.gz ${SCIPION_HOME}/software/em/.  && scipion3 installp -p scipion-em-chimera
+#########################
+
+#### EM/SPA PLUGINS #####
+
+# motioncor3 package
+scipion3 installp -p scipion-em-motioncorr -j $NPROC
+
+# IMOD package
+scipion3 installp -p scipion-em-imod -j $NPROC
+cat<<EOF >> /opt/etc/bashrc
+export IMOD_DIR=${SCIPION_HOME}/software/em/imod-4.11.25/IMOD
+source ${SCIPION_HOME}/software/em/imod-4.11.25/IMOD/IMOD-linux.sh
+EOF
+
+# Sphire package
+scipion3 installp -p scipion-em-sphire -j $NPROC
+
+# Spider package 
+scipion3 installp -p scipion-em-spider -j $NPROC
+
+# Aretomo package
+#   You need to modify the Scipion configuration file to select the executable
+#   that matches the CUDA version of your system.
+#   binary: scipion/software/em/aretomo2-1.1.3/bin/AreTomo2_1.1.3_Cuda118
+scipion3 installp -p scipion-em-aretomo -j $NPROC
+echo "" >> ${SCIPION_HOME}/config/scipion.conf
+echo "ARETOMO_BIN=\"AreTomo2_1.1.3_Cuda118\"" >> ${SCIPION_HOME}/config/scipion.conf
+
+# Atomic structural utils package
+scipion3 installp -p scipion-em-atomstructutils -j $NPROC
+
+# CCP4 package
+scipion3 installp -p scipion-em-ccp4 -j $NPROC
+
+# CryoAssess package
+scipion3 installp -p scipion-em-cryoassess -j $NPROC
+# Download the CryoAssess model weights and place them in the correct directory.
+# You can find the required model files at:
+#   https://github.com/scipion-em/scipion-em-cryoassess/tree/master/data/models
+# The target directory inside the container is:
+#   /scipion/software/em/cryoassess-models/
+# Example command (replace MODEL_FILE with the actual filename):
+#   cp /path/to/MODEL_FILE /scipion/software/em/cryoassess-models/
+# Ensure all necessary model files are copied to this directory for CryoAssess to function properly.
+mv /opt/cryoassess-models /opt/scipion/software/em/.
+echo "" >> ${SCIPION_HOME}/config/scipion.conf
+echo "CRYOASSESS_MODELS=\"${SCIPION_HOME}/software/em/cryoassess-models\"" >> ${SCIPION_HOME}/config/scipion.conf
+
+# # Gautomatch picker package
+scipion3 installp -p scipion-em-gautomatch -j $NPROC
+
+# Localized Reconstruction (Locarec) package
+scipion3 installp -p scipion-em-localrec -j $NPROC
+
+# Miffi (Cryo-EM micrograph filtering utilizing Fourier space information) package
+scipion3 installp -p scipion-em-miffi -j $NPROC
+
+# Gctf package
+scipion3 installp -p scipion-em-gctf -j $NPROC
+
+# Scipion for facilities package
+scipion3 installp -p scipion-em-facilities -j $NPROC
+
+# Fsc3d package
+scipion3 installp -p scipion-em-fsc3d -j $NPROC
+
+# Eman2 packages
+scipion3 installp -p scipion-em-eman2 -j $NPROC
+
+# Empiar package
+scipion3 installp -p scipion-em-empiar -j $NPROC
+
+# CisTEM package
+scipion3 installp -p scipion-em-cistem -j $NPROC
+mv /opt/default_run_profiles.txt ${SCIPION_HOME}/software/em/cistem-1.0.0-beta/default_run_profiles.txt
+echo "alias cisTEM=\"${SCIPION_HOME}/software/em/cistem-1.0.0-beta/cisTEM\"" >> /opt/etc/bashrc
+
+# Flexutils package
+scipion3 installp -p scipion-em-flexutils -j $NPROC
+##########################
+
+# ####### CRYOSPARC #######
+# scipion3 installp -p scipion-em-cryosparc2
+# cat<<EOF >> ${SCIPION_HOME}/config/scipion.conf
+ 
+# # The root directory where cryoSPARC code and dependencies is installed.
+# CRYOSPARC_HOME=${CRYOSPARC_HOME}
+# # full name of the initial admin account to be created
+# CRYOSPARC_USER=cryosparcuser
+# ## Optional variables
+# ## ---------------------
+# ## The password with which cryoSPARC was installed.
+# ## This is only required for the use of the Flexutils plugin and its
+# ## connection to the 3D flex training protocol.
+# # CRYOSPARC_PASSWORD = <password>
+# ## Folder (available to all workers) where scipion will create cryosparc projects
+# # CRYO_PROJECTS_DIR = <path> (default to <CRYOSPARC_HOME>/scipion_projects)
+# ## Specifies whether the CS installation is standalone or not. If False,
+# ## it is assumed that CS is installed in a cluster. If the variable is not
+# ## defined, by default assume that the installation is standalone and its
+# ## value would be True
+# CRYOSPARC_STANDALONE_INSTALLATION=False
+# # Name of the default lane where the protocols will be launched
+# CRYOSPARC_DEFAULT_LANE=cryo-gpu
+# EOF
+# ##########################
+
+##### TOMO PLUGINS #######
+
+# Dynamo package
+wget -nv -c -O ${SCIPION_HOME}/software/em/dynamo-v-1.1.532_MCR-9.9.0_GLNXA64_withMCR.tar https://scipion.cnb.csic.es/downloads/scipion/software/em/dynamo-v-1.1.532_MCR-9.9.0_GLNXA64_withMCR.tar
+cd ${SCIPION_HOME}/software/em/ && mkdir dynamo-v-1.1.532_MCR-9.9.0_GLNXA64_withMCR && tar -xf dynamo-v-1.1.532_MCR-9.9.0_GLNXA64_withMCR.tar -C dynamo-v-1.1.532_MCR-9.9.0_GLNXA64_withMCR
+cd dynamo-v-1.1.532_MCR-9.9.0_GLNXA64_withMCR
+bash ./dynamo_setup_linux.sh
+cd cuda/ && bash config.sh && make motors && touch cuda_compiled && cd 
+scipion3 installp -p scipion-em-dynamo
+
+# Tomography package
+scipion3 installp -p scipion-em-tomo -j $NPROC
+
+# Tomo3DEM package
+scipion3 installp -p scipion-em-tomo3d -j $NPROC
+
+# Tomography 3D visualization package
+scipion3 installp -p scipion-em-tomoviz -j $NPROC
+
+# novactf package
+scipion3 installp -p scipion-em-novactf -j $NPROC
+
+# Xmipp tomography package
+scipion3 installp -p scipion-em-xmipptomo -j $NPROC
+
+# Warp package 
+scipion3 installp -p scipion-em-warp
+
+# PySeg package 
+scipion3 installp -p scipion-em-pyseg -j $NPROC
+
+# EmanTomo package 
+scipion3 installp -p scipion-em-emantomo -j $NPROC
+
+# ModelAngelo package 
+scipion3 installp -p scipion-em-modelangelo -j $NPROC
+
+# TomoSegMemTV package 
+scipion3 installp -p scipion-em-tomosegmemtv -j $NPROC
+
+# DeepFinder package 
+scipion3 installp -p scipion-em-deepfinder -j $NPROC
+
+# Cryocare package 
+scipion3 installp -p scipion-em-cryocare -j $NPROC
+
+# TomoTwin package 
+scipion3 installp -p scipion-em-tomotwin -j $NPROC
+
+# Fidder package 
+scipion3 installp -p scipion-em-fidder -j $NPROC
+
+# cryodrgn package
+scipion3 installp -p scipion-em-cryodrgn -j $NPROC
+
+# resmap package
+scipion3 installp -p scipion-em-resmap -j $NPROC
+
+# IsoNet package
+scipion3 installp -p scipion-em-isonet -j $NPROC
+echo "" >> /opt/etc/bashrc
+echo "export PYTHONPATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH" >> /opt/etc/bashrc
+echo "export PATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> /opt/etc/bashrc
+echo "export ISONET_ACTIVATION_CMD=\"conda activate isonet-0.2.1\"" >> /opt/etc/bashrc
+
+# MemBrain package
+# NOTE: The MemBrain package does not have an official production release.
+# You must install it manually by cloning the repository and installing in development mode.
+cd ${SCIPION_HOME}/software/em
+git clone https://github.com/scipion-em/scipion-em-membrain.git
+scipion3 installp -p ${SCIPION_HOME}/software/em/scipion-em-membrain --devel -j $NPROC
+cd
+
+# Susantomo package
+conda create -y -n susan-0.1 "python<3.11" && conda activate susan-0.1 && conda install -c conda-forge git cmake make cudatoolkit-dev=11 gxx=10 numpy numba openmpi jupyter scipy matplotlib scikit-image -y && cd ${SCIPION_HOME}/software/em && git clone https://github.com/rkms86/SUSAN susan-0.1 && cd susan-0.1/extern && git clone https://gitlab.com/libeigen/eigen.git eigen && cd eigen && mkdir build && cd build && cmake ../ -DCMAKE_INSTALL_PREFIX=../../eigen_lib && make install && cd ../../../ && mkdir -p bin && cd bin && cmake .. &&  make -j 6 && make prepare_python && cd .. && pip install -e . && conda deactivate
+scipion3 installp --noBin -p scipion-em-susantomo
+
+# Phenix package
+# go to https://phenix-online.org/ register and wait for the email with the download password
+# go to your browser, download the installer and put it here to incorporate it in the container
+mv /opt/phenix-installer-1.21.2-5419-intel-linux-2.6-x86_64-centos6.tar.gz ${SCIPION_HOME}/software/em
+cd ${SCIPION_HOME}/software/em
+tar xvf phenix-installer-1.21.2-5419-intel-linux-2.6-x86_64-centos6.tar.gz
+cd phenix-installer-1.21.2-5419-intel-linux-2.6-x86_64-centos6
+./install --prefix=${SCIPION_HOME}/software/em/
+export PHENIX_HOME=${SCIPION_HOME}/software/em/phenix-1.21.2-5419
+
+cat<<EOF >> ${SCIPION_HOME}/config/scipion.conf
+PHENIX_HOME=${SCIPION_HOME}/software/em/phenix-1.21.2-5419
+EOF
+
+scipion3 installp -p scipion-em-phenix
+
+
+# List binaries
+scipion3 installb --help
+
+# List packages
+scipion3 installp --help
+
+# Clean up conda and apt cache
+conda clean --tarballs -y
+rm -f ${SCIPION_HOME}/software/em/*.*gz
+rm -f ${SCIPION_HOME}/software/em/*.tar
+apt clean
+rm -rf /var/lib/apt/lists/*
+
+# Update Scipion configuration
+/opt/scipion/scipion3 config --update
+
+# Move host.conf to the correct location
+mv /opt/hosts.conf /opt/scipion/config/hosts.conf
+
+# Copy /opt/etc/bashrc to $SINGULARITY_ENVIRONMENT
+echo "" >> $SINGULARITY_ENVIRONMENT
+cat /opt/etc/bashrc >> $SINGULARITY_ENVIRONMENT
+echo "" >> $SINGULARITY_ENVIRONMENT
+
+# Set permissions
+chmod -R 755 /opt
+chmod 755 /opt/etc
+chmod 644 /opt/etc/bashrc
+chown root:root /opt/etc/bashrc
+
+chmod -R 755 /opt/scipion/software/em/phenix-1.21.2-5419
+chmod 755 /opt/scipion
+chmod 755 /opt/scipion/config
+chmod 644 /opt/scipion/config/*.conf
+
+%runscript
+    #!/bin/bash
+    source /opt/etc/bashrc
+    exec "$@"
+
+%appenv scipion
+    source /opt/etc/bashrc
+%apprun scipion
+    exec /opt/scipion/scipion3 "$@"
+
+%appenv relion
+    source /opt/etc/bashrc
+%apprun relion
+    exec /opt/scipion/software/em/relion-5.0/bin/relion "$@"
+
+%appenv phenix
+    source /opt/etc/bashrc
+    source /opt/scipion/software/em/phenix-1.21.2-5419/phenix_env.sh
+    export LIBGL_ALWAYS_INDIRECT=0
+    export DISPLAY=""
+    export QT_QPA_PLATFORM=offscreen
+%apprun phenix
+    exec phenix "$@"
+
+%appenv cistem
+    source /opt/etc/bashrc
+%apprun cistem
+    exec /opt/scipion/software/em/cistem-1.0.0-beta/cisTEM "$@"
+
+%appenv isonet
+    source /opt/etc/bashrc
+    source /opt/miniconda3/etc/profile.d/conda.sh
+    conda activate isonet-0.2.1
+    export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin/:$PATH
+%apprun isonet
+    exec isonet.py "$@"
+
+%appenv 3dmod
+    source /opt/etc/bashrc
+    export PATH=/opt/scipion/software/em/imod-4.11.25/IMOD/bin:$PATH
+    export IMOD_DIR=${SCIPION_HOME}/software/em/imod-4.11.25/IMOD
+%apprun 3dmod
+    exec ${IMOD_DIR}/bin/3dmod "$@"
+
+%appenv etomo
+    source /opt/etc/bashrc
+    export PATH=/opt/scipion/software/em/imod-4.11.25/IMOD/bin:$PATH
+    export IMOD_DIR=${SCIPION_HOME}/software/em/imod-4.11.25/IMOD
+%apprun etomo
+    exec ${IMOD_DIR}/bin/etomo "$@"
+
+%test
+grep -q 'NAME="Ubuntu"' /etc/os-release
+if [ $? -eq 0 ]; then
+    echo "Container base is Ubuntu as expected."
+else
+    echo "Container base is not Ubuntu."
+fi
