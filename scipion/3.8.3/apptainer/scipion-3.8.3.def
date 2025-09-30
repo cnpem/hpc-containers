@@ -446,7 +446,7 @@ chmod 644 /opt/scipion/config/*.conf
 %appenv relion
     source /opt/etc/bashrc
 %apprun relion
-    exec relion "$@"
+    exec /opt/scipion/software/em/relion-5.0/bin/relion "$@"
 
 %appenv phenix
     source /opt/etc/bashrc
@@ -466,16 +466,21 @@ chmod 644 /opt/scipion/config/*.conf
     source /opt/etc/bashrc
     source /opt/miniconda3/etc/profile.d/conda.sh
     conda activate isonet-0.2.1
+    export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin/:$PATH
 %apprun isonet
     exec isonet.py "$@"
 
 %appenv 3dmod
     source /opt/etc/bashrc
+    export PATH=/opt/scipion/software/em/imod-4.11.25/IMOD/bin:$PATH
+    export IMOD_DIR=${SCIPION_HOME}/software/em/imod-4.11.25/IMOD
 %apprun 3dmod
     exec ${IMOD_DIR}/bin/3dmod "$@"
 
 %appenv etomo
     source /opt/etc/bashrc
+    export PATH=/opt/scipion/software/em/imod-4.11.25/IMOD/bin:$PATH
+    export IMOD_DIR=${SCIPION_HOME}/software/em/imod-4.11.25/IMOD
 %apprun etomo
     exec ${IMOD_DIR}/bin/etomo "$@"
 
