@@ -29,10 +29,10 @@ The `extras` directory contains additional packages that can be included in the 
 
 The following packages are included in the `extras` directory for this build:
 
-- [ ] cisTEM (`default_run_profiles.txt)
+- [x] cisTEM (`default_run_profiles.txt`)
 - [x] [ChimeraX](https://www.rbvi.ucsf.edu/chimerax/cgi-bin/secure/chimerax-get.py?file=1.6/linux/ChimeraX-1.6.1.tar.gz) (`ChimeraX-1.6.1.tar.gz`)
 - [x] [CryoAssess models](https://cosmic-cryoem.org/software/cryo-assess/) (`cryoassess-models`)
 - [x] [Phenix](https://phenix-online.org/) (`phenix-installer-1.21.2-5419-intel-linux-2.6-x86_64-centos6.tar.gz`)
-- [ ] Relion (`relion_torch_models`, [`relion-5.0-slurm_template.sh`](https://github.com/ucdavis/spack-ucdavis/tree/main/templates/hpccf/franklin))
+- [x] Relion ([`relion-5.0-slurm_template.sh`](https://github.com/ucdavis/spack-ucdavis/tree/main/templates/hpccf/franklin))
 
 **Note**: These files are not included in the repository and must be obtained separately.
