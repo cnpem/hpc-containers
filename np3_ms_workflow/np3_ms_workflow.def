@@ -10,9 +10,9 @@ From: opensuse/leap:15.6
 zypper in -y git nodejs-default npm-default glibc-devel patch libgomp1 gcc12-fortran gcc12
 cd /opt
 # clone without history
-# git clone --depth 1 https://github.com/danielatrivella/np3_ms_workflow.git
+git clone --depth 1 https://github.com/danielatrivella/np3_ms_workflow.git
 # using a personal fork to avoid issues with the original repo
-git clone --depth 1 https://github.com/zgcarvalho/np3_ms_workflow.git
+# git clone --depth 1 https://github.com/zgcarvalho/np3_ms_workflow.git
 
 # apply patch to write temporary files at /tmp
 # patch np3_ms_workflow/np3_workflow.js < np3_workflow.patch
