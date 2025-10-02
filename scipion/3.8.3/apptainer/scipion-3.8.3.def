@@ -42,7 +42,7 @@ export MINICONDA_VERSION="latest"
 export CUDA_ROOT=/usr/local/cuda-11.8
 export MPI_ROOT=/usr
 export SCIPION_HOME=/opt/scipion
-export NPROC=94
+export NPROC=80
 # export CRYOSPARC_HOME=/mnt/beegfs_compat/home/cryosparcuser/
 
 # Install dependencies
@@ -364,10 +364,18 @@ scipion3 installp -p scipion-em-resmap -j $NPROC
 
 # IsoNet package
 scipion3 installp -p scipion-em-isonet -j $NPROC
+conda install -c conda-forge pyqt=5.15
+# cd ${SCIPION_HOME}/software/em
+# git clone https://github.com/scipion-em/scipion-em-isonet.git
+# scipion installp -p ${SCIPION_HOME}/software/em/scipion-em-isonet --devel
+# cd
+
 echo "" >> /opt/etc/bashrc
 echo "export PYTHONPATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet:$PYTHONPATH" >> /opt/etc/bashrc
 echo "export PATH=${SCIPION_HOME}/software/em/isonet-0.2.1/IsoNet/bin:$PATH" >> /opt/etc/bashrc
-echo "export ISONET_ACTIVATION_CMD=\"conda activate isonet-0.2.1\"" >> /opt/etc/bashrc
+echo "" >> ${SCIPION_HOME}/config/scipion.conf
+echo "ISONET_HOME=\"${SCIPION_HOME}/software/em/isonet-0.2.1\"" >> ${SCIPION_HOME}/config/scipion.conf
+echo "export ISONET_ACTIVATION_CMD=\"conda activate isonet-0.2.1\"" >> ${SCIPION_HOME}/config/scipion.conf
 
 # MemBrain package
 # NOTE: The MemBrain package does not have an official production release.
@@ -396,7 +404,6 @@ PHENIX_HOME=${SCIPION_HOME}/software/em/phenix-1.21.2-5419
 EOF
 
 scipion3 installp -p scipion-em-phenix
-
 
 # List binaries
 scipion3 installb --help
@@ -467,6 +474,7 @@ chmod 644 /opt/scipion/config/*.conf
     source /opt/miniconda3/etc/profile.d/conda.sh
     conda activate isonet-0.2.1
     export PATH=/opt/scipion/software/em/isonet-0.2.1/IsoNet/bin/:$PATH
+    export PYTHONPATH=/opt/scipion/software/em/isonet-0.2.1:$PYTHONPATH
 %apprun isonet
     exec isonet.py "$@"
 
