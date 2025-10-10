@@ -1,0 +1,34 @@
+Bootstrap: docker
+From: opensuse/leap:16.0
+
+%help
+    Genome Analysis Toolkit (GATK) version 3.3-0.
+
+    This container provides GATK 3.3-0. To run GATK, use:
+
+    singularity exec <container_image> java -jar /opt/GenomeAnalysisTK.jar <GATK_arguments>
+
+    Example:
+    singularity exec gatk-3.3.0.sif java -jar /opt/GenomeAnalysisTK.jar --help
+
+
+%post
+    zypper in -y wget bzip2 java-17-openjdk
+
+    cd /opt
+    wget -c 'https://storage.googleapis.com/gatk-software/package-archive/gatk/GenomeAnalysisTK-3.3-0-g37228af.tar.bz2'
+    tar xvf GenomeAnalysisTK-3.3-0-g37228af.tar.bz2
+    # Clean up
+    rm GenomeAnalysisTK-3.3-0-g37228af.tar.bz2
+    zypper clean --all
+
+%test
+    java -jar /opt/GenomeAnalysisTK.jar --help
+
+%runscript
+    echo "Executing GATK 3.3-0..."
+    java -jar /opt/GenomeAnalysisTK.jar "$@"
+
+%labels
+    Author "José Geraldo de Carvalho Pereira, LNBio-CNPEM, Brazil"
+    Version "1.0"
