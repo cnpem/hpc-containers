@@ -5,15 +5,16 @@ image for portability.
 
 whatis([[Description: RStudio Server environment using Singularity]])
 
-local root = "/path/to/this/example_module"
-local bin = pathJoin(root, "/bin")
-local img = pathJoin(root, "/3.4.3/singularity-rstudio.simg")
-local library = pathJoin(root, "/library-3.4")
+local root = "/opt/images/modulefiles/rstudio_singularity"
+local imgroot = "/opt/images/singularity-rstudio"
+local bin = pathJoin(imgroot, "/bin")
+local img = pathJoin(imgroot, "/4.5.2/singularity-rstudio.simg")
+local library = pathJoin(imgroot, "/4.5.2/library-4.5")
 local host_mnt = "/mnt"
 
-local user_library = os.getenv("HOME") .. "/R/library-3.4"
+local user_library = os.getenv("HOME") .. "/R/library-4.5"
 
-prereq("singularity")
+-- prereq("singularity")
 prepend_path("PATH", bin)
 prepend_path("RSTUDIO_SINGULARITY_BINDPATH", "/:" .. host_mnt, ",")
 prepend_path("RSTUDIO_SINGULARITY_BINDPATH", library .. ":/library", ",")
