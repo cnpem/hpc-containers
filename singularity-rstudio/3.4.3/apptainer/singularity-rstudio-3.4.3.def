@@ -28,7 +28,7 @@ From: ubuntu:24.04
 
 %post
   # Software versions
-  export RSTUDIO_VERSION=2025.09.2+418
+  export RSTUDIO_VERSION=2025.09.2-418
   export R_VERSION=4.5.2
   
   # Get dependencies
@@ -48,12 +48,17 @@ From: ubuntu:24.04
   apt-get install -y --no-install-recommends \
     ca-certificates \
     wget \
-    gdebi-core
+    gdebi-core \
+    python3 \
+    python3-pip \
+    python3-ldap3
  
-   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
+  # Add CRAN repository for R
+  wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | \
     tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
   add-apt-repository \
     "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+  
   # Install R
   apt-get install -y --no-install-recommends \
     r-base=${R_VERSION}* \
@@ -68,29 +73,15 @@ From: ubuntu:24.04
     libcairo2-dev \
     libxt-dev \
     libopenblas-dev
- 
-  # wget \
-  #   --no-verbose \
-  #   -O libssl1.0.0.deb \
-  #   "http://security.ubuntu.com/ubuntu/pool/main/o/openssl1.0/libssl1.0.0_1.0.2n-1ubuntu5.9_amd64.deb"
-  # gdebi -n libssl1.0.0.deb
-  # rm -f libssl1.0.0.deb
+
+  # Install RStudio Server
   apt-get update && apt-get install -y libssl3
   wget \
     --no-verbose \
     -O rstudio-server.deb \
-    "https://download2.rstudio.org/server/bionic/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb"
+    "https://download2.rstudio.org/server/jammy/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb"
   gdebi -n rstudio-server.deb
   rm -f rstudio-server.deb
-
-  # Add support for LDAP authentication
-  wget \
-    --no-verbose \
-    -O get-pip.py \
-    "https://bootstrap.pypa.io/get-pip.py"
-  python3 get-pip.py
-  rm -f get-pip.py
-  pip3 install 'ldap3==2.9'
 
   # Clean up
   rm -rf /var/lib/apt/lists/*
