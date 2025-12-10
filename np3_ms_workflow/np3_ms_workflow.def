@@ -54,5 +54,14 @@ else
     exit 1
 fi
 
+echo "Testing np3_ms_workflow.js..."
+node /opt/np3_ms_workflow/np3_workflow.js test --output_path /tmp
+if [ $? -eq 0 ]; then
+    echo "Test passed"
+else
+    echo "Test failed"
+    exit 1
+fi
+
 %help
 This is a container for the np3_ms_workflow tool. It is a workflow for the analysis of mass spectrometry data.
