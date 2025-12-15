@@ -74,6 +74,18 @@ From: ubuntu:24.04
     libxt-dev \
     libopenblas-dev
 
+  # Install extra dependencies
+  apt-get install -y --no-install-recommends \
+    libudunits2-dev \
+    libhdf5-dev \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    libsqlite3-dev \
+    cmake
+
   # Install RStudio Server
   apt-get update && apt-get install -y libssl3
   wget \
