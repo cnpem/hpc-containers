@@ -1,0 +1,102 @@
+BootStrap: docker
+From: nvidia/cuda:12.2.0-devel-rockylinux9
+Stage: compile
+
+%files
+./ambertools25.tar.bz2 /opt
+./pmemd24.tar.bz2 /opt
+
+%post 
+dnf clean all
+dnf update -y
+dnf -y install tcsh make \
+               which flex bison patch bc \
+               libXt-devel libXext-devel \
+               perl util-linux wget bzip2 \
+               bzip2-devel zlib-devel \
+	       python3.x86_64 python3-devel.x86_64 \
+	       fftw fftw-devel gcc-gfortran
+               #gcc gcc-gfortran gcc-c++ cmake \
+
+ln -s /usr/bin/python3 /usr/bin/python
+
+cd /opt
+#unpacking and installing updates in amber
+tar jxvf ./ambertools25.tar.bz2
+tar jxvf ./pmemd24.tar.bz2
+
+cd ambertools25_src/
+./update_amber --update
+cd ../pmemd24_src/
+./update_pmemd --update
+
+echo "Installing Open MPI"
+export OMPI_DIR=/opt/ompi
+export OMPI_VERSION=4.1.4
+export OMPI_URL="https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.4.tar.bz2"
+mkdir -p /tmp/ompi
+mkdir -p /opt
+# Download
+cd /tmp/ompi && curl -OL $OMPI_URL && tar -xjf openmpi-$OMPI_VERSION.tar.bz2
+# Compile and install
+cd /tmp/ompi/openmpi-$OMPI_VERSION && ./configure --prefix=$OMPI_DIR && make install
+# Set env variables so we can compile our application
+export PATH=$OMPI_DIR/bin:$PATH
+export LD_LIBRARY_PATH=$OMPI_DIR/lib:$LD_LIBRARY_PATH
+export MANPATH=$OMPI_DIR/share/man:$MANPATH
+
+cd /opt
+#compiling OpenSSL
+curl -OL https://www.openssl.org/source/openssl-3.5.0.tar.gz
+tar zxvf openssl-3.5.0.tar.gz
+cd openssl-3.5.0
+./Configure
+make
+make install
+#Compiling CMake
+cd /opt
+curl -OL https://github.com/Kitware/CMake/releases/download/v3.31.7/cmake-3.31.7.tar.gz
+tar zxvf cmake-3.31.7.tar.gz
+cd cmake-3.31.7
+./bootstrap && make && make install
+
+#compiling Ambertool24 and Amber20 cpu serial
+
+cd /opt
+
+#unpacking and installing updates in amber
+cd ambertools25_src/
+cd build
+mkdir -p CMakeFiles/miniconda/download/
+wget https://github.com/conda-forge/miniforge/releases/download/25.11.0-1/Miniforge3-Linux-x86_64.sh -O ./CMakeFiles/miniconda/download/Miniforge3-Linux-x86_64.sh
+./run_cmake
+make install 
+
+#compiling Ambertool23 and Amber22 cpu parallel
+sed -i -e "s/MPI=FALSE/MPI=TRUE/" run_cmake
+./run_cmake
+make install
+
+cd /opt
+cd pmemd24_src
+cd build
+./run_cmake
+make install
+
+
+%environment
+
+export CUDA_HOME=/usr/local/cuda/
+export PATH=/opt/cmake-3.31.7/bin/cmake:$PATH
+export OPENSSL_ROOT_DIR=/opt/openssl-3.5.0/
+export OMPI_DIR=/opt/ompi
+export PATH=$OMPI_DIR/bin:$PATH
+export LD_LIBRARY_PATH=$OMPI_DIR/lib:$LD_LIBRARY_PATH
+export MANPATH=$OMPI_DIR/share/man:$MANPATH
+export AMBERHOME=/opt/ambertools25
+export PATH="$AMBERHOME/bin:$PATH"
+export LD_LIBRARY_PATH="$AMBERHOME/lib:$LD_LIBRARY_PATH"
+export PERL5LIB="$AMBERHOME/lib/perl:$PERL5LIB"
+export PYTHONPATH="$AMBERHOME/lib/python3.12/site-packages:$PYTHONPATH"
+export QUICK_BASIS="$AMBERHOME/AmberTools/src/quick/basis"
+
