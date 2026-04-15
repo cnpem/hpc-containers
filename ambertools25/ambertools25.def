@@ -99,4 +99,7 @@ export LD_LIBRARY_PATH="$AMBERHOME/lib:$LD_LIBRARY_PATH"
 export PERL5LIB="$AMBERHOME/lib/perl:$PERL5LIB"
 export PYTHONPATH="$AMBERHOME/lib/python3.12/site-packages:$PYTHONPATH"
 export QUICK_BASIS="$AMBERHOME/AmberTools/src/quick/basis"
+export PMEMDHOME=/opt/pmemd24
+export PATH="$PMEMDHOME/bin:$PATH"
+
 
