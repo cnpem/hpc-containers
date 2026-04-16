@@ -1,0 +1,84 @@
+
+Bootstrap: docker
+from: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu20.04
+
+
+%environment
+    export PATH=/usr/local/gromacs/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/gromacs/lib:$LD_LIBRARY_PATH
+    export GMX_GPU_DD_COMMS=true
+    export GMX_GPU_PME_PP_COMMS=true
+    export GMX_FORCE_UPDATE_DEFAULT_GPU=true
+    export OMPI_ALLOW_RUN_AS_ROOT=1
+    export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+%post 
+    set -e 
+    export DEBIAN_FRONTEND=noninteractive
+    export OMPI_ALLOW_RUN_AS_ROOT=1
+    export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+    
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        wget git ca-certificates build-essential \
+        curl libcurl4-openssl-dev \
+        libssl-dev libffi-dev \
+        openmpi-bin openmpi-common libopenmpi-dev \
+        && apt-get clean
+
+    CMAKE_VERSION=3.15.3
+    CMAKE_TARBALL=cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+    wget -q https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/${CMAKE_TARBALL}
+    tar -xzf ${CMAKE_TARBALL}
+    cp -a cmake-${CMAKE_VERSION}-Linux-x86_64/bin/* /usr/local/bin/
+    cp -a cmake-${CMAKE_VERSION}-Linux-x86_64/share/* /usr/local/share/
+    rm -rf cmake-${CMAKE_VERSION}-Linux-x86_64 ${CMAKE_TARBALL}
+
+    
+
+        git clone https://github.com/HITS-MCM/gromacs-ramd.git
+    cd gromacs-ramd
+    git checkout gromacs-2020.5-ramd-2.0
+
+    mkdir build_mpi && cd build_mpi
+
+    # export CUDA_VISIBLE_DEVICES=""
+    cmake .. \
+    -DGMX_BUILD_OWN_FFTW=ON \
+    -DGMX_GPU=CUDA \
+    -DGMX_CUDA_TARGET_SM="75;86;89" \
+    -DGMX_CUDA_TARGET_COMPUTE="75;86;89" \
+    -DGMX_MPI=ON
+
+    make -j10
+    make check
+    make install
+    cd ..
+
+    mkdir build_gmx && cd build_gmx
+    cmake .. \
+        -DGMX_BUILD_OWN_FFTW=ON \
+        -DGMX_GPU=CUDA \
+        -DGMX_CUDA_TARGET_SM="75;86;89" \
+        -DGMX_CUDA_TARGET_COMPUTE="75;86;89" \
+        -DGMX_MPI=OFF
+    make -j10
+    make install
+    cd ..
+
+%runscript
+    echo "=========================================="
+    echo "  GROMACS-RAMD 2.0 | gromacs-2020.5"
+    echo "=========================================="
+    source /usr/local/gromacs/bin/GMXRC
+    echo "gmx_mpi disponível em: $(which gmx_mpi)"
+    echo "Versão: $(gmx_mpi --version 2>&1 | head -3)"
+    echo ""
+
+    # Se receber argumentos, repassa direto pro gmx_mpi
+    # Caso contrário, cai no shell interativo
+    if [ $# -gt 0 ]; then
+        exec gmx_mpi "$@"
+    else
+        exec /bin/bash
+    fi
