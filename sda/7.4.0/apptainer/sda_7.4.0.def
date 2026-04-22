@@ -1,0 +1,52 @@
+
+Bootstrap: docker
+from: ubuntu:20.04
+
+
+%environment
+    export PATH=/usr/local/bin:$PATH
+    export PATH=/sda/sda_flex-7.4.0/auxi:$PATH
+    export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+
+%post
+
+    export DEBIAN_FRONTEND=noninteractive
+
+
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        wget git ca-certificates build-essential \
+        python3 python3-pip \
+        curl libcurl4-openssl-dev \
+        libssl-dev libffi-dev \
+        gfortran \
+        apbs \
+        python-is-python3 \
+        bash-completion \
+        libnetcdf-dev libfftw3-dev \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+        
+    pip3 install pdb2pqr
+    mkdir -p /sda
+    chmod 777 /sda
+    # wget -q --show-progress --header="Authorization: token ${GITHUB_TOKEN}" -O /sda/sda-7.4.0.tar.gz "https://github.com/cnpem/sda-7.4.0/releases/download/v7.4.0/sda-7.4.0.tar.gz"
+    curl -L \
+        -H "Authorization: token {{ GITHUB_TOKEN }}" \
+        -H "Accept: application/octet-stream" \
+        -o /sda/sda-7.4.0.tar.gz \
+        "https://github.com/cnpem/sda-7.4.0/archive/refs/tags/v7.4.0.tar.gz"
+
+    ls -lh /sda/sda-7.4.0.tar.gz
+
+    tar xvzf /sda/sda-7.4.0.tar.gz -C /sda
+    cd /sda/sda-7.4.0-7.4.0
+    tar xvzf sda-7.4.0.tar.gz -C /sda
+    cd /sda/sda_flex-7.4.0/src
+    make clean && make -j$(nproc)
+
+    cd ..
+    cp ./bin/* /usr/local/bin/
+    cp ./lib/* /usr/local/lib/
+
+%runscript
+    exec "$@"
