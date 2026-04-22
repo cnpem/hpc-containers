@@ -29,7 +29,7 @@ from: ubuntu:20.04
     pip3 install pdb2pqr
     mkdir -p /sda
     chmod 777 /sda
-    # wget -q --show-progress --header="Authorization: token ${GITHUB_TOKEN}" -O /sda/sda-7.4.0.tar.gz "https://github.com/cnpem/sda-7.4.0/releases/download/v7.4.0/sda-7.4.0.tar.gz"
+
     curl -L \
         -H "Authorization: token {{ GITHUB_TOKEN }}" \
         -H "Accept: application/octet-stream" \
