@@ -23,6 +23,7 @@ export GITHUB_TOKEN=your_github_token_here
 sudo singularity build --build-arg GITHUB_TOKEN=${GITHUB_TOKEN} sda_7.4.0.sif sda_7.4.0.def
 ```
 
+*Depending on the apptainer/singularity version, the `--build-arg` option may not be supported.* 
 
 ## Usage
 
