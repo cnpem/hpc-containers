@@ -11,7 +11,8 @@ apt-get update && apt-get upgrade -y
 apt-get install -y wget unzip libgomp1 locales
 locale-gen en_US.UTF-8
 update-locale LANG=en_US.UTF-8
+apt-get install -y dotnet-runtime-8.0
 
-wget https://github.com/vdemichev/DiaNN/releases/download/2.0/DIA-NN-2.3.1-Academia-Linux.zip -O DIA-NN-2.3.1-Academia-Linux.zip
-unzip DIA-NN-2.3.1-Academia-Linux.zip
-chmod -R 775 /diann-2.3.1
+wget https://github.com/vdemichev/DiaNN/releases/download/2.0/DIA-NN-2.5.1-Academia-Linux.zip -O DIA-NN-2.5.1-Academia-Linux.zip
+unzip DIA-NN-2.5.1-Academia-Linux.zip
+chmod -R 775 /diann-2.5.1
