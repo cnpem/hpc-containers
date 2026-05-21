@@ -8,10 +8,15 @@ LC_ALL=en_US.UTF-8
 
 %post
 apt-get update && apt-get upgrade -y
-apt-get install -y wget unzip libgomp1 locales
+apt-get install -y wget unzip libgomp1 locales build-essential
 locale-gen en_US.UTF-8
 update-locale LANG=en_US.UTF-8
-apt-get install -y dotnet-runtime-8.0
+
+wget https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    rm packages-microsoft-prod.deb
+
+apt-get update && apt-get install -y dotnet-runtime-8.0 && rm -r /var/lib/apt/lists/*
 
 wget https://github.com/vdemichev/DiaNN/releases/download/2.0/DIA-NN-2.5.1-Academia-Linux.zip -O DIA-NN-2.5.1-Academia-Linux.zip
 unzip DIA-NN-2.5.1-Academia-Linux.zip
