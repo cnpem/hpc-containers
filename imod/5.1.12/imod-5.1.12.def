@@ -1,0 +1,67 @@
+Bootstrap: docker
+From: rockylinux:8
+
+%labels
+    Maintainer rick.hokama@lnbio.cnpem.br
+    Version 5.1.12
+    Description iMOD
+
+%environment
+    export IMOD_DIR=/opt/IMOD
+    export PATH=$IMOD_DIR/bin:$PATH
+    export LD_LIBRARY_PATH=$IMOD_DIR/qtlib:$IMOD_DIR/lib:$LD_LIBRARY_PATH
+    export IMOD_PLUGIN_DIR=$IMOD_DIR/lib/imodplug
+
+
+%post
+    # System deps
+    dnf -y update
+    dnf -y install \
+        wget \
+        java-11-openjdk \
+        libglvnd-glx \
+        libglvnd-opengl \
+        mesa-libGL \
+        mesa-libGLU \
+        libXrender \
+        libXcursor \
+        libXfixes \
+        libXrandr \
+        libXi \
+        libxcb \
+        xcb-util-image \
+        xcb-util-keysyms \
+        xcb-util-renderutil \
+        xcb-util-wm \
+        xcb-util \
+        fontconfig \
+        freetype \
+        python3 \
+        libSM \
+        libICE \
+        libxkbcommon-x11
+    dnf clean all
+
+    # Download and install IMOD
+    cd /tmp
+    wget --no-check-certificate \
+        https://bio3d.colorado.edu/imod/AMD64-RHEL5/imod_5.1.12_RHEL8-64_CUDA12.0.sh
+
+    sh imod_5.1.12_RHEL8-64_CUDA12.0.sh \
+        -dir /opt \
+        -skip \
+        -name IMOD \
+        -yes
+
+    rm -f /tmp/imod_5.1.12_RHEL8-64_CUDA12.0.sh
+
+
+%runscript
+    exec 3dmod "$@"
+
+
+%test
+    export IMOD_DIR=/opt/IMOD
+    export PATH=$IMOD_DIR/bin:$PATH
+    imodinfo --version
+    echo "IMOD installation OK"
