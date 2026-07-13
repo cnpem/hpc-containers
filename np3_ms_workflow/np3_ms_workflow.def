@@ -33,6 +33,11 @@ conda activate np3
 npm install shelljs@0.8.4 commander@5.1.0 
 node np3_workflow.js setup 
 
+
+# setup machine-id for proper streamlit execution
+cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
+chmod 444 /etc/machine-id
+
 %environment
 . /opt/mambaforge/etc/profile.d/conda.sh
 conda activate np3
@@ -45,6 +50,7 @@ Author "José Geraldo de Carvalho Pereira <jose.pereira@lnbio.cnpem.br>"
 Version "0.1"
 
 %test
+rm -rf /tmp/test/L754_bacs/mzxml/
 echo "Testing np3_ms_workflow container..."
 node /opt/np3_ms_workflow/np3_workflow --version
 if [ $? -eq 0 ]; then
