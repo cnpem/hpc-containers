@@ -7,7 +7,11 @@ From: opensuse/leap:16.0
 
 %post
 # install dependencies
-zypper in -y git nodejs-default npm-default glibc-devel patch libgomp1 gcc-fortran gcc which wget zip timezone
+zypper ar -f -G https://download.opensuse.org/distribution/leap/16.0/repo/oss/ repo-oss-direct
+zypper --non-interactive refresh repo-oss-direct
+zypper in -y --from repo-oss-direct git nodejs-default npm-default glibc-devel patch libgomp1 gcc-fortran gcc which wget zip timezone
+# zypper in -y git nodejs-default npm-default glibc-devel patch libgomp1 gcc-fortran gcc which wget zip timezone
+
 cd /opt
 # clone without history
 git clone --depth 1 https://github.com/danielatrivella/np3_ms_workflow.git
