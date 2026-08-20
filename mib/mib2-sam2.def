@@ -1,0 +1,184 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+    #!/bin/bash
+    set -e
+
+    # Forçar modo não interativo
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Instalar dependências do sistema (X11 básico + Chromium/CEF + utilitários)
+    apt-get update && apt-get install -y \
+        wget \
+        unzip \
+        git \
+        build-essential \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        libxext6 \
+        libxt6 \
+        libxrender1 \
+        libxtst6 \
+        libxi6 \
+        libsm6 \
+        libice6 \
+        x11-apps \
+        ca-certificates \
+        sudo \
+        findutils \
+        libnss3 \
+        libnspr4 \
+        libcups2 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libxinerama1 \
+        libgbm1 \
+        libasound2 \
+        libgtk-3-0 \
+        libgdk-pixbuf2.0-0 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libpangoft2-1.0-0 \
+        libcairo2 \
+        libxkbcommon0 \
+        libxshmfence1 \
+        libxfixes3 \
+        libxss1 \
+        libx11-xcb1 \
+        libxcb1 \
+        libdbus-1-3 \
+        libatk-bridge2.0-0 \
+        libatspi2.0-0 \
+        libatk1.0-0 \
+        libdrm2 \
+        fonts-liberation \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # =================================================================
+    # 1. Download e Instalação do MATLAB Runtime R2024b (v242)
+    # =================================================================
+    mkdir -p /opt/mcr_install
+    cd /opt/mcr_install
+    wget --user-agent="Mozilla/5.0" https://ssd.mathworks.com/supportfiles/downloads/R2024b/Release/5/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2024b_Update_5_glnxa64.zip
+    unzip -q MATLAB_Runtime_R2024b_Update_5_glnxa64.zip
+    ./install -mode silent -agreeToLicense yes -destinationFolder /opt/mcr
+    cd /
+    rm -rf /opt/mcr_install
+
+    # =================================================================
+    # 2. Download e Instalação do MIB Oficial Estável
+    # =================================================================
+    mkdir -p /opt/mib_install
+    cd /opt/mib_install
+    wget https://mib.helsinki.fi/web-update/MIB2_Linux.zip
+    unzip *.zip
+    mkdir -p /opt/mib
+    unzip -q MIB2_Linux.install -d /opt/mib
+    cd /opt/mib
+    if [ -f "bundle.zip" ]; then
+        unzip -q bundle.zip
+        rm -f bundle.zip installAgentURL.txt
+    fi
+    cd /
+    rm -rf /opt/mib_install
+    if [ -d "/opt/mib/application" ]; then
+        mv /opt/mib/application/* /opt/mib/
+        rm -rf /opt/mib/application
+    fi
+
+    # =================================================================
+    # 3. Script de Inicialização do MIB
+    # =================================================================
+    cat << 'EOF' > /opt/mib/run_MIB.sh
+#!/bin/bash
+script_dir="/opt/mib"
+ARCH=glnxa64
+
+# Garante que o MIB aponte para o executável do Python correto com PyTorch
+export MIB_PYTHON="/opt/miniforge3/envs/sam4mib/bin/python"
+export PATH="/opt/miniforge3/envs/sam4mib/bin:${PATH}"
+
+# Localiza automaticamente a pasta de versão interna do MCR
+MCRROOT=$(ls -d /opt/mcr/* 2>/dev/null | head -n 1)
+if [ -z "$MCRROOT" ]; then
+    echo "ERRO: Diretório de versão do MCR não encontrado em /opt/mcr/*"
+    exit 1
+fi
+echo "Usando MCR em: ${MCRROOT}"
+echo "Montando LD_LIBRARY_PATH com base nos diretórios oficiais do MCR..."
+MCR_LIBS="${MCRROOT}/runtime/${ARCH}:${MCRROOT}/bin/${ARCH}:${MCRROOT}/sys/os/${ARCH}:${MCRROOT}/sys/opengl/lib/${ARCH}:${MCRROOT}/extern/bin/${ARCH}"
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}:${MCR_LIBS}:/.singularity.d/libs
+echo "---"
+echo "Caminhos carregados com sucesso. Iniciando o MIB..."
+echo "---"
+exec "${script_dir}/MIB"
+EOF
+    chmod +x /opt/mib/run_MIB.sh /opt/mib/MIB
+
+    # =================================================================
+    # 4. Ambiente Python para SAM2 (sem erros de shadowing)
+    # =================================================================
+
+    # Instalar Miniforge (conda/mamba)
+    MINIFORGE_VERSION=24.11.0-0
+    wget -q "https://github.com/conda-forge/miniforge/releases/download/${MINIFORGE_VERSION}/Miniforge3-${MINIFORGE_VERSION}-Linux-x86_64.sh" \
+        -O /tmp/miniforge.sh
+    bash /tmp/miniforge.sh -b -p /opt/miniforge3
+    rm /tmp/miniforge.sh
+
+    export PATH=/opt/miniforge3/bin:$PATH
+
+    # Criar o ambiente sam4mib
+    conda create -y --prefix /opt/miniforge3/envs/sam4mib python=3.11
+    . /opt/miniforge3/etc/profile.d/conda.sh
+    conda activate /opt/miniforge3/envs/sam4mib
+
+    # PyTorch cu124 (compatível com CUDA 13.x no HPC)
+    pip3 install --no-cache-dir torch torchvision torchaudio \
+        --index-url https://download.pytorch.org/whl/cu124
+
+    # Pacotes adicionais
+    pip3 install --no-cache-dir hydra-core iopath setuptools zarr opencv-python onnxruntime onnx pycocotools
+    pip3 install --no-cache-dir onnxruntime-gpu==1.19.2
+
+    # --- PASSO CRUCIAL CONTRA O SHADOWING ---
+    # 1. Clonar em pasta temporária isolada fora do site-packages
+    mkdir -p /tmp/sam2_build
+    git clone https://github.com/Ajaxels/segment-anything-2.git /tmp/sam2_build
+    cd /tmp/sam2_build
+
+    # 2. Instalação standard no Python (REMOVIDA a flag -e)
+    pip install --no-cache-dir --no-build-isolation .
+
+    # 3. Organizar as configs (.yaml) e pesos (.pt) no pacote instalado no site-packages
+    SITE_PKG="/opt/miniforge3/envs/sam4mib/lib/python3.11/site-packages/sam2"
+    
+    mkdir -p "${SITE_PKG}/sam2_configs"
+    cp -r /tmp/sam2_build/sam2/configs/sam2/*.yaml "${SITE_PKG}/sam2_configs/" 2>/dev/null || true
+    
+    mkdir -p "${SITE_PKG}/configs/sam2"
+    cp -r /tmp/sam2_build/sam2/configs/sam2/*.yaml "${SITE_PKG}/configs/sam2/" 2>/dev/null || true
+
+    # 4. Pré-download dos pesos (.pt) nas rotas acessadas pelo MIB
+    CKPT_DIR="${SITE_PKG}/checkpoints"
+    mkdir -p "${CKPT_DIR}"
+    
+    for MODEL in sam2_hiera_tiny.pt sam2_hiera_small.pt sam2_hiera_base_plus.pt sam2_hiera_large.pt; do
+        wget -q "https://dl.fbaipublicfiles.com/segment_anything_2/072824/${MODEL}" -O "${CKPT_DIR}/${MODEL}"
+        cp "${CKPT_DIR}/${MODEL}" "${SITE_PKG}/configs/sam2/${MODEL}"
+    done
+
+    # 5. Sair do diretório e APAGAR a pasta temporária do Git (Elimina o Shadowing)
+    cd /
+    rm -rf /tmp/sam2_build
+
+    conda deactivate
+    /opt/miniforge3/bin/conda clean -afy
+
+%environment
+    export PATH=/opt/mib:/opt/miniforge3/envs/sam4mib/bin:/opt/miniforge3/bin:${PATH}
+
+%runscript
+    exec /opt/mib/run_MIB.sh
