@@ -1,0 +1,123 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%post
+    # Forçar modo não interativo
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Instalar dependências do sistema (X11 básico + Chromium/CEF + utilitários)
+    apt-get update && apt-get install -y \
+        wget \
+        unzip \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        libxext6 \
+        libxt6 \
+        libxrender1 \
+        libxtst6 \
+        libxi6 \
+        libsm6 \
+        libice6 \
+        x11-apps \
+        ca-certificates \
+        sudo \
+        findutils \
+        libnss3 \
+        libnspr4 \
+        libcups2 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libxinerama1 \
+        libgbm1 \
+        libasound2 \
+        libgtk-3-0 \
+        libgdk-pixbuf2.0-0 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libpangoft2-1.0-0 \
+        libcairo2 \
+        libxkbcommon0 \
+        libxshmfence1 \
+        libxfixes3 \
+        libxss1 \
+        libx11-xcb1 \
+        libxcb1 \
+        libdbus-1-3 \
+        libatk-bridge2.0-0 \
+        libatspi2.0-0 \
+        libatk1.0-0 \
+        libdrm2 \
+        fonts-liberation \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # =================================================================
+    # 1. Download e Instalação do MATLAB Runtime R2024b (v242)
+    # =================================================================
+    mkdir -p /opt/mcr_install
+    cd /opt/mcr_install
+    wget --user-agent="Mozilla/5.0" https://ssd.mathworks.com/supportfiles/downloads/R2024b/Release/5/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2024b_Update_5_glnxa64.zip
+    unzip -q MATLAB_Runtime_R2024b_Update_5_glnxa64.zip
+    ./install -mode silent -agreeToLicense yes -destinationFolder /opt/mcr
+    cd /
+    rm -rf /opt/mcr_install
+
+    # =================================================================
+    # 2. Download e Instalação do MIB Oficial Estável
+    # =================================================================
+    mkdir -p /opt/mib_install
+    cd /opt/mib_install
+    wget https://mib.helsinki.fi/web-update/MIB2_Linux.zip
+    unzip *.zip
+    mkdir -p /opt/mib
+    unzip -q MIB2_Linux.install -d /opt/mib
+    cd /opt/mib
+    if [ -f "bundle.zip" ]; then
+        unzip -q bundle.zip
+        rm -f bundle.zip installAgentURL.txt
+    fi
+    cd /
+    rm -rf /opt/mib_install
+    if [ -d "/opt/mib/application" ]; then
+        mv /opt/mib/application/* /opt/mib/
+        rm -rf /opt/mib/application
+    fi
+
+    # =================================================================
+    # 3. Script de Inicialização do MIB (Com MCRROOT dinâmico)
+    # =================================================================
+    cat << 'EOF' > /opt/mib/run_MIB.sh
+#!/bin/bash
+script_dir="/opt/mib"
+ARCH=glnxa64
+
+# Localiza automaticamente a pasta de versão interna do MCR
+MCRROOT=$(ls -d /opt/mcr/* 2>/dev/null | head -n 1)
+
+if [ -z "$MCRROOT" ]; then
+    echo "ERRO: Diretório de versão do MCR não encontrado em /opt/mcr/*"
+    exit 1
+fi
+
+echo "Usando MCR em: ${MCRROOT}"
+echo "Montando LD_LIBRARY_PATH com base nos diretórios oficiais do MCR..."
+
+MCR_LIBS="${MCRROOT}/runtime/${ARCH}:${MCRROOT}/bin/${ARCH}:${MCRROOT}/sys/os/${ARCH}:${MCRROOT}/sys/opengl/lib/${ARCH}:${MCRROOT}/extern/bin/${ARCH}"
+
+# Prioriza libs do sistema para o Chromium/CEF e inclui as libs do MCR e do Singularity
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}:${MCR_LIBS}:/.singularity.d/libs
+
+echo "---"
+echo "Caminhos carregados com sucesso. Iniciando o MIB..."
+echo "---"
+exec "${script_dir}/MIB"
+EOF
+
+    # Garante permissão de execução nos scripts
+    chmod +x /opt/mib/run_MIB.sh /opt/mib/MIB
+
+%environment
+    export PATH=/opt/mib:${PATH}
+
+%runscript
+    exec /opt/mib/run_MIB.sh
