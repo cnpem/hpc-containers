@@ -1,0 +1,61 @@
+Bootstrap: docker
+From: python:3.9-slim-bookworm
+
+
+%environment
+    export LC_ALL=C
+    export PYTHONNOUSERSITE=1
+    export PYTHONDONTWRITEBYTECODE=1
+    # Local do checkpoint baked no container
+    export MEMBRAIN_MODELS=/opt/membrain_models
+    export MEMBRAIN_CKPT=/opt/membrain_models/membrain_seg_v10.ckpt
+    # Evita erro de cache do matplotlib em home read-only / Lustre
+    export MPLCONFIGDIR=/tmp/matplotlib-$USER
+
+%post
+    set -eu
+
+    # --- dependências de sistema -------------------------------------------
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential git ca-certificates curl \
+        libgl1 libglib2.0-0
+    rm -rf /var/lib/apt/lists/*
+
+    # --- Step 1+2 do site: ambiente Python 3.9 + pip install membrain-seg ---
+    # (o python:3.9 da imagem já faz o papel do `conda create ... python=3.9`)
+    python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
+    # Se o driver NVIDIA do cluster for antigo (erro "NVIDIA driver on your
+    # system is too old"), instale antes um torch compatível, como sugere o
+    # Troubleshooting do site. Descomente a linha abaixo:
+    # python -m pip install --no-cache-dir torch==2.0.1
+
+    python -m pip install --no-cache-dir membrain-seg
+
+    # --- gdown para baixar o checkpoint do Google Drive ---------------------
+    python -m pip install --no-cache-dir gdown
+
+    # --- Step 4 do site: modelo pré-treinado (v10, "best model") -----------
+    mkdir -p /opt/membrain_models
+    if gdown 1hruug1GbO4V8C4bkE5DZJeybDyOxZ7PX \
+            -O /opt/membrain_models/membrain_seg_v10.ckpt; then
+        echo "Checkpoint baixado com sucesso."
+    else
+        echo "AVISO: falha ao baixar o checkpoint (quota do Google Drive?)."
+        echo "       Baixe manualmente e monte com: -B ~/membrain_models:/opt/membrain_models"
+    fi
+
+    chmod -R a+rX /opt/membrain_models
+
+%runscript
+    # Sem argumentos mostra o help do membrain; com argumentos executa o comando
+    if [ "$#" -eq 0 ]; then
+        exec membrain --help
+    fi
+    exec "$@"
+
+%test
+    # Step 3 do site: validar a instalação
+    membrain --help
+    python -c "import membrain_seg, torch; print('torch', torch.__version__, '| CUDA build', torch.version.cuda)"
