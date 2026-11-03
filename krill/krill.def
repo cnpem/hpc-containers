@@ -1,0 +1,208 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+# ---------------------------------------------------------------------------
+# Krill (https://github.com/HenriqueNiero/Krill) - BGC prioritization pipeline
+#
+# Build:
+#   export SINGULARITY_TMPDIR=/path/with/lots/of/space   # antiSMASH DBs + ARTS refs are big
+#   singularity build krill.sif krill.def                # or: apptainer build --fakeroot krill.sif krill.def
+#
+# Run (Pfam is NOT baked in; it must be reachable, e.g. under $HOME or via -B):
+#   cd /data/input    # os runners gravam AntiSMASH/ e ARTS/ com caminhos relativos ao cwd
+#   singularity run krill.sif /data/input --bigscape --pfam-path /pfam/Pfam-A.hmm -t 16
+#   (o wrapper /opt/images/apps/krill/bin/krill usa --pwd na pasta de entrada)
+# ---------------------------------------------------------------------------
+
+%labels
+    Description Krill - integrated BGC bioprospecting platform (antiSMASH + ARTS + BiG-SCAPE + R plots)
+    R_version 4.5.1 (2025-06-13) x86_64-conda-linux-gnu
+    Source https://github.com/HenriqueNiero/Krill
+
+%help
+    Krill container. Three conda envs live in /opt/conda/envs: Krill (python 3.9,
+    R 4.5.1, antiSMASH 6.1.1), ARTS (python 2.7) and bigscape (BiG-SCAPE 2.0.3).
+
+    Usage:   singularity run krill.sif [Krill options] PATH
+    Example: singularity run -B /data/in:/data -B /data/pfam:/pfam krill.sif \
+                 /data --bigscape --pfam-path /pfam/Pfam-A.hmm -t 16
+
+    Pfam-A.hmm (release 38.2 tested upstream) must be provided via bind mount and
+    must be hmmpress'ed beforehand (Pfam-A.hmm.h3f/.h3i/.h3m/.h3p next to it).
+    The container filesystem is read-only at runtime; all outputs are written
+    relative to the working directory / into PATH (your bound input folder).
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    # Krill env first: krill_run_antismash.sh calls `antismash` without activating anything,
+    # and Krill calls Rscript / seqkit / gawk / parallel straight from PATH.
+    export PATH=/opt/conda/envs/Krill/bin:/opt/conda/bin:$PATH
+    # Keep host ~/.local python packages and ~/R libraries from shadowing the container ones.
+    export PYTHONNOUSERSITE=1
+    export R_LIBS_USER=/opt/conda/envs/Krill/lib/R/library
+
+%post -c /bin/bash
+    set -euo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+
+    # ---- Build-time knobs ---------------------------------------------------
+    CONDA_DIR=/opt/conda
+    KRILL_REPO=https://github.com/HenriqueNiero/Krill.git
+    KRILL_REF=main                       # branch/tag/commit; pin a commit for reproducibility
+    ARTS_REPO=https://bitbucket.org/ziemertlab/arts.git
+    ARTS_REF=master                      # README says "ARTS release 3.0b2"; build stops if the tag name differs
+    ARTS_REFSETS_URL=https://arts.ziemertlab.com/static/zip_refsets/all_references.zip
+
+    # ---- System packages ----------------------------------------------------
+    # lib* packages are the shared libs needed by the bundled Krill/ORF_Finder/ORFfinder binary
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl wget git unzip bzip2 build-essential \
+        libbz2-1.0 libdw1 libelf1 liblzma5 libnghttp2-14 libuv1 libzstd1 zlib1g
+
+    # ---- Conda (Miniforge: conda-forge by default, mamba included) -----------
+    curl -fsSL -o /tmp/miniforge.sh \
+        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+    bash /tmp/miniforge.sh -b -p "$CONDA_DIR"
+    rm -f /tmp/miniforge.sh
+    export PATH="$CONDA_DIR/envs/Krill/bin:$CONDA_DIR/bin:$PATH"
+
+    # ---- Krill source ---------------------------------------------------------
+    git clone "$KRILL_REPO" /opt/Krill
+    git -C /opt/Krill checkout "$KRILL_REF"
+    git -C /opt/Krill rev-parse HEAD > /opt/krill_commit.txt
+
+    # The upstream shell runners hardcode ~/miniconda3 and ~/anaconda3. Inside Singularity "~" is
+    # the *host user's* home, so point them at the conda inside the image instead.
+    sed -i -e "s|~/miniconda3|$CONDA_DIR|g" -e "s|~/anaconda3|$CONDA_DIR|g" \
+        /opt/Krill/Krill/krill_run_antismash.sh /opt/Krill/Krill/krill_run_arts.sh
+    if grep -n '~/' /opt/Krill/Krill/krill_run_antismash.sh /opt/Krill/Krill/krill_run_arts.sh; then
+        echo "ERROR: unpatched ~/ path left in krill_run_*.sh" >&2; exit 1
+    fi
+
+    # ---- Env 1: Krill (python 3.9 + R 4.5.1 from conda-forge) ----------------
+    # Pins follow the Krill README. r-base=4.5.1 gives "R version 4.5.1 (2025-06-13)" on
+    # platform x86_64-conda-linux-gnu.
+    # upsetplot=0.9.0: instalado a mao no sandbox (env do Krill) para os plots.
+    mamba create -y -n Krill -c conda-forge -c bioconda \
+        python=3.9 \
+        r-base=4.5.1 \
+        hmmer=3.1b2 seqkit=2.13.0 gawk parallel=20260422 \
+        pandas=2.3.1 matplotlib=3.9.4 numpy=1.26.4 biopython=1.78 tqdm "xlsxwriter>=3.0" \
+        scipy scikit-learn statsmodels seaborn networkx pingouin \
+        "upsetplot=0.9.0" \
+        r-reshape2 r-mass r-ggplot2 r-dplyr r-stringr r-tidyr r-gridextra r-plotly r-igraph r-vegan
+
+    # antiSMASH goes into the Krill env (same order as the README)
+    mamba install -y -n Krill -c conda-forge -c bioconda antismash==6.1.1
+
+    # pip-only / not covered above (cprint, pyScss from README; ete3 is imported by analysis_bigslice_krill.py)
+    "$CONDA_DIR/envs/Krill/bin/python" -m pip install --no-cache-dir cprint pyScss==1.4.0 ete3
+
+    # Krill ships a modified record_processing.py that must replace antiSMASH's
+    cp /opt/Krill/Krill/record_processing.py \
+       "$CONDA_DIR/envs/Krill/lib/python3.9/site-packages/antismash/common/record_processing.py"
+
+    # antiSMASH databases baked into the image (runtime FS is read-only)
+    "$CONDA_DIR/envs/Krill/bin/download-antismash-databases"
+
+    # ---- Env 2: ARTS (python 2.7, explicit spec file from the repo) ----------
+    conda create -y -n ARTS --file /opt/Krill/arts_specs.txt
+
+    ARTS_DIR="$CONDA_DIR/envs/ARTS/arts"
+    git clone "$ARTS_REPO" "$ARTS_DIR"
+    if ! git -C "$ARTS_DIR" checkout "$ARTS_REF"; then
+        echo "ERROR: ARTS ref '$ARTS_REF' not found. Available tags:" >&2
+        git -C "$ARTS_DIR" tag >&2
+        exit 1
+    fi
+
+    # ARTS reference datasets (must provide reference/metagenome/)
+    wget -q "$ARTS_REFSETS_URL" -O /tmp/all_references.zip
+    mkdir -p /tmp/arts_ref
+    unzip -q /tmp/all_references.zip -d /tmp/arts_ref
+    if [ -d /tmp/arts_ref/reference ]; then
+        rm -rf "$ARTS_DIR/reference"
+        mv /tmp/arts_ref/reference "$ARTS_DIR/reference"
+    else
+        mkdir -p "$ARTS_DIR/reference"
+        cp -a /tmp/arts_ref/. "$ARTS_DIR/reference/"
+    fi
+    if [ ! -d "$ARTS_DIR/reference/metagenome" ]; then
+        echo "ERROR: $ARTS_DIR/reference/metagenome not found after unpacking refsets:" >&2
+        ls -la "$ARTS_DIR/reference" >&2
+        exit 1
+    fi
+    rm -rf /tmp/all_references.zip /tmp/arts_ref
+
+    # ---- Env 3: BiG-SCAPE 2 -----------------------------------------------------
+    # Mesmas especificacoes que foram instaladas a mao no sandbox:
+    #  - sqlalchemy=2.0.51: com a 2.1.x o BiG-SCAPE 2.0.3 quebra em DB.init_run
+    #    (ObjectNotExecutableError)
+    #  - seaborn / networkx / pandas / matplotlib-base: usados por
+    #    Krill_BiGSCAPE_category_analysis.py (seaborn traz statsmodels, patsy, formulaic...)
+    mamba create -y -n bigscape -c conda-forge -c bioconda \
+        bigscape=2.0.3 \
+        "sqlalchemy=2.0.51" \
+        "seaborn=0.13.2" "networkx=3.7" \
+        "pandas=3.0.5" "matplotlib-base=3.11.1"
+
+    # Diretorio do pacote big_scape (evita fixar python3.13 no caminho)
+    BS_DIR="$("$CONDA_DIR/envs/bigscape/bin/python" -c 'import big_scape, os; print(os.path.dirname(big_scape.__file__))')"
+
+    # Patch: o diretorio do MIBiG pode ja existir / nao pode ser criado em runtime (FS read-only)
+    sed -i 's/os.makedirs(mibig_dir)/os.makedirs(mibig_dir, exist_ok=True)/' \
+        "$BS_DIR/file_input/load_files.py"
+    if ! grep -q 'os.makedirs(mibig_dir, exist_ok=True)' "$BS_DIR/file_input/load_files.py"; then
+        echo "ERROR: patch do mibig_dir nao foi aplicado (o codigo do BiG-SCAPE mudou?)" >&2; exit 1
+    fi
+
+    # MIBiG 4.0 baixado no build (em runtime a imagem e read-only)
+    "$CONDA_DIR/envs/bigscape/bin/python" -c "
+from big_scape.file_input import load_files as bs_files
+bs_files.get_mibig('4.0', '$BS_DIR')
+"
+    find "$BS_DIR" -maxdepth 2 -iname '*mibig*'
+
+    # ---- Cleanup / permissions ----------------------------------------------------
+    conda clean -afy
+    apt-get clean
+    rm -rf /var/lib/apt/lists/* /root/.cache /tmp/miniforge.sh /tmp/all_references.zip /tmp/arts_ref
+    chmod -R a+rX /opt
+
+%runscript
+    # Roda o __main__.py direto: ele faz "import prepareFastas", entao o diretorio dele
+    # precisa estar no sys.path ("python3 -m Krill" nao funciona).
+    # Sem "cd": o diretorio de trabalho e o de quem chama (use --pwd na pasta de entrada).
+    exec python3 /opt/Krill/Krill/__main__.py "$@"
+
+%test
+    set -eu
+    echo "Krill commit: $(cat /opt/krill_commit.txt)"
+
+    # R must be exactly 4.5.1 on the conda platform, and every package used by the plot scripts must load
+    Rscript -e 'stopifnot(R.version.string == "R version 4.5.1 (2025-06-13)", R.version$platform == "x86_64-conda-linux-gnu")'
+    Rscript -e 'for (p in c("reshape2","MASS","ggplot2","dplyr","stringr","tidyr","gridExtra","plotly","igraph","vegan")) library(p, character.only = TRUE)'
+    R --version | head -n 1
+
+    python3 --version
+    python3 -c "import pandas, numpy, matplotlib, Bio, tqdm, cprint, xlsxwriter, scipy, sklearn, statsmodels, seaborn, networkx, pingouin, ete3, antismash, upsetplot"
+    antismash --version
+    hmmsearch -h > /dev/null
+    seqkit version
+    gawk --version | head -n 1
+    parallel --version | head -n 1
+    test -x /opt/Krill/Krill/ORF_Finder/ORFfinder
+    ldd /opt/Krill/Krill/ORF_Finder/ORFfinder | { ! grep -q 'not found'; }
+
+    conda run -n ARTS python --version
+    conda run -n ARTS python /opt/conda/envs/ARTS/arts/artspipeline1.py --help > /dev/null
+    test -d /opt/conda/envs/ARTS/arts/reference/metagenome
+
+    # BiG-SCAPE env: sqlalchemy tem que ser 2.0.x; libs da analise de categorias; MIBiG baixado no build
+    conda run -n bigscape bigscape cluster --help > /dev/null
+    conda run -n bigscape python -c "import sqlalchemy; assert sqlalchemy.__version__.startswith('2.0.'), sqlalchemy.__version__"
+    conda run -n bigscape python -c "import pandas, numpy, scipy, sklearn, matplotlib.pyplot, seaborn, networkx"
+    BS_DIR="$(conda run -n bigscape python -c 'import big_scape, os; print(os.path.dirname(big_scape.__file__))')"
+    find "$BS_DIR" -maxdepth 2 -iname '*mibig*' | grep -q .
