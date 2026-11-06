@@ -1,0 +1,56 @@
+bootstrap: docker
+from: nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04
+
+
+%labels
+    MAINTAINER gabriel.totene@lnbio.cnpem.br
+    VERSION 1.0.0
+
+%environment
+    export PATH=/usr/local/bin:$PATH
+
+
+%post
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        wget git ca-certificates build-essential \
+        curl libcurl4-openssl-dev \
+        libssl-dev libffi-dev \
+        openmpi-bin openmpi-common libopenmpi-dev \
+        nwchem \
+        && apt-get clean 
+
+%runscript
+    case "${1:-}" in
+        -h|--help|"")
+            cat /.singularity.d/runscript.help
+            exit 0
+            ;;
+        -v|--version)
+            echo "NWChem container 1.0.0"
+            dpkg -s nwchem | grep '^Version'
+            exit 0
+            ;;
+    esac
+    exec /usr/bin/mpirun.openmpi "$@"
+    
+%help
+    NWChem 1.0.0 container, built on nvidia/cuda:12.2.2-cudnn8-devel-ubuntu22.04.
+    Entrypoint: mpirun.openmpi (parallel execution).
+
+    Usage:
+        apptainer run nwchem_1.0.0.sif [mpirun options] nwchem <input.nw>
+    
+    To get mpi version, run:
+        singularity exec nwchem_1.0.0.sif mpirun.openmpi --version
+
+    Examples:
+        apptainer run nwchem_1.0.0.sif -np 4 nwchem h2o.nw
+        apptainer run --nv nwchem_1.0.0.sif --oversubscribe -np 2 nwchem h2o.nw
+    
+    Container options:
+        -h, --help     Show this help
+        -v, --version  Show container and NWChem package versions
